@@ -654,11 +654,11 @@
                                         </div>
                                         <form onSubmit={(e) => {
                                             e.preventDefault(); const fd = new FormData(e.target);
-                                            const newCat = { name: fd.get('name'), emoji: fd.get('emoji')||'📌' };
+                                            const name = fd.get('name');
+                                            const newCat = { id: `c_${Date.now()}`, name: name, emoji: name.charAt(0).toUpperCase() };
                                             setConfirmAction({ type: 'addCategory', payload: newCat, title: '新增分類', message: `確定要建立新分類「${newCat.name}」嗎？`, formElement: e.target });
                                         }} className="flex flex-col sm:flex-row gap-3">
                                             <input type="text" name="name" required placeholder="分類名稱" className="input-box flex-1 shadow-sm" />
-                                            <input type="text" name="emoji" maxLength="2" required placeholder="Emoji 🍔" className="input-box w-full sm:w-28 text-center shadow-sm" />
                                             <button type="submit" className="bg-primary text-white px-8 py-3.5 rounded-xl text-sm font-bold hover:bg-gray-800 shadow-md btn-press whitespace-nowrap">建立分類</button>
                                         </form>
                                     </div>
@@ -690,14 +690,14 @@
                                         
                                         <form onSubmit={(e) => { 
                                             e.preventDefault(); const fd = new FormData(e.target); 
-                                            const newItem = { name: fd.get('name'), price: parseFloat(fd.get('price')), emoji: fd.get('emoji')||'📦', category: fd.get('category') };
+                                            const name = fd.get('name');
+                                            const newItem = { name: name, price: parseFloat(fd.get('price')), emoji: name.charAt(0).toUpperCase(), category: fd.get('category') };
                                             setConfirmAction({ type: 'addItem', payload: newItem, title: '加入菜單', message: `確定要將「${newItem.name}」加入收銀台嗎？`, formElement: e.target });
                                         }} className="bg-gray-50 p-6 rounded-[2rem] border border-gray-200">
                                             <h4 className="text-sm font-bold mb-5">新增商品</h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                                                 <input type="text" name="name" required placeholder="商品名稱" className="input-box bg-white shadow-sm" />
                                                 <input type="number" name="price" step="0.1" required placeholder="價格 ($)" className="input-box bg-white shadow-sm" />
-                                                <input type="text" name="emoji" maxLength="2" required placeholder="圖示 Emoji" className="input-box bg-white text-center shadow-sm" />
                                             </div>
                                             <div className="mb-8">
                                                 <label className="block text-xs font-bold text-secondary mb-3">所屬分類</label>
