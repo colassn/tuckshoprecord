@@ -69,7 +69,7 @@
 
         const ADMIN_EMAIL = 'chimhinhin@gmail.com';
 
-        // 預設資料 (防白屏用)
+        // 預設資料 (防白屏用及預覽模式使用)
         const DEFAULT_CATEGORIES = [
             { id: 'lunch', name: '午餐', emoji: '🍱' },
             { id: 'drinks', name: '飲品', emoji: '🥤' },
@@ -82,25 +82,41 @@
             { id: 'm3', name: '學校午餐', price: 35, category: 'lunch', emoji: '🍛' }
         ];
         const DEFAULT_ALLOWANCES = [20, 50, 100];
+        const MOCK_TRANSACTIONS = [
+            { id: 'mock1', type: 'expense', amount: 35, category: 'lunch', itemName: '學校午餐', emoji: '🍛', timestamp: Date.now() - 3600000, createdBy: ADMIN_EMAIL },
+            { id: 'mock2', type: 'expense', amount: 8, category: 'drinks', itemName: '檸檬茶', emoji: '🧃', timestamp: Date.now() - 7200000, createdBy: ADMIN_EMAIL },
+            { id: 'mock3', type: 'income', amount: 100, category: 'allowance', itemName: '本週零用錢', emoji: '💰', timestamp: Date.now() - 86400000, createdBy: 'mom' }
+        ];
 
         function App() {
             const [db, setDb] = useState(null);
             const [user, setUser] = useState(null);
             const [isInitializing, setIsInitializing] = useState(true);
             
+            // 狀態與資料
             const [transactions, setTransactions] = useState([]);
             const [categories, setCategories] = useState([]);
             const [menuItems, setMenuItems] = useState([]);
             const [quickAllowances, setQuickAllowances] = useState([]);
             
+            // UI 狀態
             const [activeTab, setActiveTab] = useState('journey'); 
             const [cart, setCart] = useState([]);
             const [isCartModalOpen, setIsCartModalOpen] = useState(false); 
             const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
             const [isMomAdding, setIsMomAdding] = useState(false);
 
-            // 新增：模擬管理員狀態 (用於預覽環境)
+            // 系統防護機制
+            const [isOfflineMode, setIsOfflineMode] = useState(false);
             const [isMockAdmin, setIsMockAdmin] = useState(false);
+            const [toast, setToast] = useState({ show: false, message: '', type: 'info' });
+
+            const showToast = (message, type = 'info') => {
+                setToast({ show: true, message, type });
+                setTimeout(() => setToast({ show: false, message: '', type: 'info' }), 6000);
+            };
+
+            const todayStr = new Date().toLocaleDateString('zh-HK', { month: 'short', day: 'numeric', weekday: 'short' });
 
             // 1. 初始化 Firebase 及登入
             useEffect(() => {
@@ -121,7 +137,8 @@
                                 await auth.signInAnonymously();
                             } catch (e) {
                                 console.error("匿名登入失敗:", e);
-                                alert("系統連接失敗，請確保在 Firebase Authentication 中已開啟「Anonymous (匿名)」登入。");
+                                showToast("無法連接伺服器，已切換至「離線預覽模式」", "error");
+                                setIsOfflineMode(true);
                                 setIsInitializing(false);
                             }
                         }
@@ -135,7 +152,15 @@
 
             // 2. 資料庫讀取與自動開荒
             useEffect(() => {
-                if (!db || !user) return;
+                if (!db || !user || isOfflineMode) {
+                    if (isOfflineMode) {
+                        setTransactions(MOCK_TRANSACTIONS);
+                        setMenuItems(DEFAULT_ITEMS);
+                        setCategories(DEFAULT_CATEGORIES);
+                        setQuickAllowances(DEFAULT_ALLOWANCES);
+                    }
+                    return;
+                }
                 
                 // 讀取流水帳
                 const unsubTx = getDbRef().collection('transactions').onSnapshot((snapshot) => {
@@ -145,7 +170,9 @@
                 }, (error) => {
                     console.error("Transactions Error:", error);
                     if (error.code === 'permission-denied') {
-                        alert("資料庫權限不足！請前往 Firebase Console -> Firestore -> Rules 確保已設定 allow read, write: if true;");
+                        showToast("資料庫鎖定中！已自動為你開啟「模擬預覽模式」。請確保 Firestore 規則已設定為 allow read, write: if true;", "error");
+                        setIsOfflineMode(true);
+                        setTransactions(MOCK_TRANSACTIONS);
                     }
                 });
 
@@ -157,22 +184,40 @@
                         setCategories(data.categories || []);
                         setQuickAllowances(data.quickAllowances || []);
                     } else {
-                        // 【防白屏】如果資料庫係空嘅，自動寫入預設資料
+                        // 如果資料庫係空嘅，嘗試寫入預設資料
                         getDbRef().collection('settings').doc('config').set({
                             categories: DEFAULT_CATEGORIES,
                             items: DEFAULT_ITEMS,
                             quickAllowances: DEFAULT_ALLOWANCES
-                        }).catch(e => console.error("寫入預設設定失敗:", e));
+                        }).catch(e => {
+                            // 寫入失敗唔緊要，直接使用本地預設
+                            setMenuItems(DEFAULT_ITEMS);
+                            setCategories(DEFAULT_CATEGORIES);
+                            setQuickAllowances(DEFAULT_ALLOWANCES);
+                        });
                     }
-                }, (error) => console.error("Settings Error:", error));
+                }, (error) => {
+                    if (error.code === 'permission-denied') {
+                        setMenuItems(DEFAULT_ITEMS);
+                        setCategories(DEFAULT_CATEGORIES);
+                        setQuickAllowances(DEFAULT_ALLOWANCES);
+                    }
+                });
 
                 return () => { unsubTx(); unsubSettings(); };
-            }, [db, user]);
+            }, [db, user, isOfflineMode]);
 
             const isAdmin = (user && user.email === ADMIN_EMAIL) || isMockAdmin;
 
-            // Google 登入 (修復跳轉 Bug 及預覽環境限制)
+            // Google 登入 (修復跳轉 Bug 及無支援環境問題)
             const handleAdminLogin = async () => {
+                if (isOfflineMode) {
+                    setIsMockAdmin(true);
+                    setActiveTab('overview');
+                    showToast("已為您切換至「模擬管理員」，可以盡情預覽介面了！", "info");
+                    return;
+                }
+
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     await firebase.auth().signInWithPopup(provider);
@@ -181,9 +226,9 @@
                     if (err.code === 'auth/operation-not-supported-in-this-environment') {
                         setIsMockAdmin(true);
                         setActiveTab('overview');
-                        alert("提示：當前預覽環境限制了 Google 彈窗登入，已自動為您開啟「模擬管理員模式」。若要使用真實登入，請將網頁部署或使用 Live Server 於本機開啟。");
+                        showToast("當前環境限制彈窗，已自動為您開啟「模擬管理員模式」供預覽。", "info");
                     } else if(err.code !== 'auth/popup-closed-by-user') {
-                        alert("登入失敗: " + err.message);
+                        showToast("登入失敗: " + err.message, "error");
                     }
                 }
             };
@@ -241,11 +286,16 @@
 
             // 批次結帳
             const handleCheckout = async () => {
-                if (!db || (!user && !isMockAdmin) || cart.length === 0) return;
+                if (cart.length === 0) return;
                 const batchTime = Date.now(); 
                 const currentCart = [...cart]; 
                 
                 setCart([]); setIsCartModalOpen(false); setActiveTab('overview');
+
+                if (isOfflineMode) {
+                    showToast("模擬結帳成功！真實環境下這將上傳至雲端。", "info");
+                    return;
+                }
 
                 try {
                     const batch = db.batch();
@@ -260,24 +310,41 @@
                         }
                     }
                     await batch.commit();
-                } catch (error) { console.error("結帳失敗:", error); }
+                } catch (error) { showToast("結帳失敗，請檢查網路。", "error"); }
             };
 
             const handleAddIncome = async (amount, itemName) => {
-                if (!db || (!user && !isMockAdmin) || amount <= 0) return;
-                await getDbRef().collection('transactions').add({
-                    type: 'income', amount, category: 'allowance', itemName: itemName || '撥款入帳', emoji: '💰',
-                    timestamp: Date.now(), createdBy: (user && user.email) ? user.email : 'Anonymous'
-                });
+                if (amount <= 0) return;
                 setIsMomAdding(false);
+                
+                if (isOfflineMode) {
+                    showToast("模擬入帳成功！真實環境下這將上傳至雲端。", "info");
+                    return;
+                }
+
+                try {
+                    await getDbRef().collection('transactions').add({
+                        type: 'income', amount, category: 'allowance', itemName: itemName || '撥款入帳', emoji: '💰',
+                        timestamp: Date.now(), createdBy: (user && user.email) ? user.email : 'Anonymous'
+                    });
+                } catch(e) {
+                    showToast("寫入失敗，請檢查權限。", "error");
+                }
             };
 
             const handleDeleteTransaction = async (id) => {
                 if (!isAdmin) return;
-                await getDbRef().collection('transactions').doc(id).delete();
+                if (isOfflineMode) { showToast("預覽模式下無法刪除資料。", "info"); return; }
+                
+                try {
+                    await getDbRef().collection('transactions').doc(id).delete();
+                } catch(e) {
+                    showToast("刪除失敗。", "error");
+                }
             };
 
             const saveSettings = async (updates) => {
+                if (isOfflineMode) { showToast("預覽模式下無法儲存設定至雲端。", "info"); return; }
                 if (db) await getDbRef().collection('settings').doc('config').set(updates, { merge: true });
             };
 
@@ -288,6 +355,7 @@
                 return (
                     <div className="flex h-screen items-center justify-center bg-background flex-col gap-4">
                         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-xs text-secondary font-bold tracking-widest">LOADING...</p>
                     </div>
                 );
             }
@@ -297,6 +365,17 @@
             return (
                 <div className="flex flex-col h-[100dvh] text-sm relative selection:bg-gray-200">
                     
+                    {/* 自定義優雅的 Toast 提示 (取代 alert) */}
+                    {toast.show && (
+                        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md animate-enter">
+                            <div className={`p-4 rounded-2xl shadow-xl flex items-start gap-3 ${toast.type === 'error' ? 'bg-red-50 border border-red-100 text-red-800' : 'bg-gray-900 border border-gray-800 text-white'}`}>
+                                <i className={`fas ${toast.type === 'error' ? 'fa-exclamation-circle text-red-500' : 'fa-info-circle text-gray-400'} mt-0.5`}></i>
+                                <div className="flex-1 text-sm font-medium leading-relaxed">{toast.message}</div>
+                                <button onClick={() => setToast({show:false})} className="opacity-50 hover:opacity-100"><i className="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* 頂部導航列 (極簡 Apple 風格) */}
                     <header className="h-[64px] bg-white/80 backdrop-blur-xl border-b border-bordercolor px-5 flex justify-between items-center z-20 sticky top-0">
                         <div className="flex items-center gap-6">
@@ -304,14 +383,15 @@
                                 {user && user.photoURL ? (
                                     <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-gray-100 object-cover" />
                                 ) : (
-                                    <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">
+                                    <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
                                         {isAdmin ? 'A' : 'V'}
                                     </div>
                                 )}
                                 <div className="hidden sm:block">
                                     <span className="font-bold text-base tracking-tight text-primary block leading-tight">{isAdmin ? 'Workspace' : 'Journey'}</span>
                                     <span className="text-[10px] text-secondary font-medium tracking-wide flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Cloud Synced
+                                        <span className={`w-1.5 h-1.5 rounded-full ${isOfflineMode ? 'bg-amber-400' : 'bg-green-500 animate-pulse-soft'}`}></span> 
+                                        {isOfflineMode ? '離線預覽中' : 'Cloud Synced'}
                                     </span>
                                 </div>
                             </div>
@@ -321,6 +401,7 @@
                                     <>
                                         <TopNavLink label="儀表板" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                                         <TopNavLink label="收銀台" active={activeTab === 'pos'} onClick={() => setActiveTab('pos')} />
+                                        <TopNavLink label="消費旅程" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} />
                                         <TopNavLink label="交易紀錄" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
                                         <TopNavLink label="系統設定" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                                     </>
@@ -338,12 +419,12 @@
                             )}
                             
                             {isAdmin ? (
-                                <button onClick={() => { firebase.auth().signOut(); window.location.reload(); }} className="text-secondary hover:text-primary transition-colors text-sm font-medium px-2" title="登出">
+                                <button onClick={() => { if(!isOfflineMode) firebase.auth().signOut(); window.location.reload(); }} className="text-secondary hover:text-primary transition-colors text-sm font-medium px-2" title="登出">
                                     登出
                                 </button>
                             ) : (
                                 <button onClick={handleAdminLogin} className="flex items-center gap-2 bg-white border border-bordercolor text-primary px-4 py-2 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm">
-                                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="G" />
+                                    <i className="fas fa-user-shield text-gray-500"></i>
                                     <span className="hidden md:inline">管理員登入</span>
                                 </button>
                             )}
@@ -358,12 +439,14 @@
                                 <div className="max-w-5xl mx-auto w-full pb-24 md:pb-8 smooth-enter pt-6">
                                     <h1 className="text-2xl font-bold tracking-tight mb-6">Dashboard</h1>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                        <div className="md:col-span-2 bg-primary rounded-3xl p-8 md:p-10 flex flex-col justify-between shadow-apple relative overflow-hidden">
+                                        <div className="md:col-span-2 bg-primary rounded-3xl p-8 md:p-10 flex flex-col justify-between shadow-apple relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
                                             <div className="relative z-10 flex justify-between items-start">
                                                 <div>
-                                                    <div className="text-xs font-medium text-gray-400 mb-2 tracking-wider flex items-center gap-2">可用餘額</div>
+                                                    <div className="text-xs font-medium text-gray-400 mb-2 tracking-wider flex items-center gap-2">可用餘額 <span className="bg-white/10 text-white/80 px-2 py-0.5 rounded text-[10px]">HKD</span></div>
                                                     <div className="text-6xl md:text-7xl font-bold tracking-tighter text-white">${totalBalance.toFixed(1)}</div>
                                                 </div>
+                                                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white/50 border border-white/10 group-hover:bg-white/20 transition-colors"><i className="fas fa-wallet"></i></div>
                                             </div>
                                             <div className="flex gap-12 mt-16 relative z-10 border-t border-white/10 pt-6">
                                                 <div><div className="text-[10px] text-gray-400 mb-1 tracking-wider font-bold">總支出</div><div className="text-xl font-semibold text-white">${totalExpense.toFixed(1)}</div></div>
@@ -403,31 +486,35 @@
                             <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden px-5 md:px-8 gap-6 max-w-[1400px] mx-auto w-full smooth-enter pb-6 pt-6">
                                 <div className="w-full md:w-[65%] flex flex-col h-full bg-white rounded-3xl border border-bordercolor shadow-apple overflow-hidden">
                                     <div className="px-6 py-4 border-b border-bordercolor flex gap-2 overflow-x-auto no-scrollbar shrink-0 bg-gray-50/50">
-                                        <button onClick={() => setActiveCategoryFilter('all')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === 'all' ? 'bg-primary text-white border-primary' : 'bg-white text-secondary border-gray-200 hover:border-gray-300'}`}>全部</button>
+                                        <button onClick={() => setActiveCategoryFilter('all')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === 'all' ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-secondary border-gray-200 hover:border-gray-300'}`}>全部</button>
                                         {categories.map(cat => (
-                                            <button key={cat.id} onClick={() => setActiveCategoryFilter(cat.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === cat.id ? 'bg-primary text-white border-primary' : 'bg-white text-secondary border-gray-200 hover:border-gray-300'}`}>
+                                            <button key={cat.id} onClick={() => setActiveCategoryFilter(cat.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === cat.id ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-secondary border-gray-200 hover:border-gray-300'}`}>
                                                 {cat.emoji} {cat.name}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-[120px] md:pb-6">
                                         {filteredMenu.length === 0 ? (
-                                            <div className="h-full flex flex-col items-center justify-center text-secondary text-sm">目前沒有商品，請前往設定新增。</div>
+                                            <div className="h-full flex flex-col items-center justify-center">
+                                                <div className="w-16 h-16 bg-gray-50 border border-bordercolor rounded-2xl flex items-center justify-center text-gray-300 mb-4 shadow-sm"><i className="fas fa-search text-xl"></i></div>
+                                                <div className="text-sm font-bold text-primary">目前沒有任何商品</div>
+                                                <div className="text-xs text-secondary mt-1">請前往「系統設定」建立你的菜單。</div>
+                                            </div>
                                         ) : (
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                                 {filteredMenu.map(item => {
                                                     const qty = cart.find(i => i.id === item.id)?.quantity || 0;
                                                     return (
-                                                        <div key={item.id} className={`p-5 rounded-2xl border transition-all flex flex-col h-full ${qty > 0 ? 'border-primary ring-1 ring-primary bg-gray-50/50' : 'border-bordercolor hover:border-gray-300 bg-white'}`}>
+                                                        <div key={item.id} className={`p-5 rounded-2xl border transition-all flex flex-col h-full ${qty > 0 ? 'border-primary ring-1 ring-primary shadow-premium hover:-translate-y-1' : 'border-bordercolor hover:border-gray-300 hover:shadow-premium hover:-translate-y-1'}`}>
                                                             <div className="flex-1 flex flex-col items-center justify-center cursor-pointer mb-5" onClick={() => handleItemQuantityChange(item, 1)}>
                                                                 <div className="text-4xl mb-4 transform transition-transform hover:scale-110 active:scale-95">{item.emoji}</div>
                                                                 <div className="font-bold text-sm text-center text-primary line-clamp-1 w-full">{item.name}</div>
-                                                                <div className="text-xs font-bold text-secondary mt-1.5">${item.price}</div>
+                                                                <div className="text-xs font-semibold text-secondary mt-1.5 px-2 py-0.5 bg-gray-50 rounded-md border border-gray-100">${item.price}</div>
                                                             </div>
-                                                            <div className="w-full flex items-center justify-between bg-gray-50 rounded-xl p-1 shrink-0 border border-bordercolor">
+                                                            <div className="w-full flex items-center justify-between bg-gray-50/80 rounded-xl p-1 shrink-0 border border-bordercolor">
                                                                 <button onClick={() => handleItemQuantityChange(item, -1)} disabled={qty===0} className="w-9 h-9 rounded-lg flex justify-center items-center text-secondary disabled:opacity-30 active:scale-90 transition-all hover:bg-white hover:shadow-sm"><i className="fas fa-minus text-[10px]"></i></button>
                                                                 <span className="font-bold text-sm w-6 text-center text-primary">{qty}</span>
-                                                                <button onClick={() => handleItemQuantityChange(item, 1)} className="w-9 h-9 rounded-lg bg-white shadow-sm flex justify-center items-center text-primary active:scale-90 transition-all border border-bordercolor hover:border-gray-300"><i className="fas fa-plus text-[10px]"></i></button>
+                                                                <button onClick={() => handleItemQuantityChange(item, 1)} className="w-9 h-9 rounded-lg bg-white shadow-input flex justify-center items-center text-primary active:scale-90 transition-all border border-bordercolor hover:border-gray-300"><i className="fas fa-plus text-[10px]"></i></button>
                                                             </div>
                                                         </div>
                                                     );
@@ -438,12 +525,15 @@
                                 </div>
                                 <div className="hidden md:flex w-[35%] bg-white border border-bordercolor rounded-3xl shadow-apple flex-col overflow-hidden">
                                     <div className="p-6 border-b border-bordercolor flex justify-between items-center bg-gray-50/50">
-                                        <div className="font-bold text-sm text-primary tracking-wide">結帳清單</div>
-                                        {cart.length > 0 && <button onClick={clearCart} className="text-xs font-bold text-secondary hover:text-primary transition-colors">清空</button>}
+                                        <div className="font-bold text-sm text-primary tracking-wide"><i className="fas fa-receipt text-gray-300 mr-2"></i> 結帳清單</div>
+                                        {cart.length > 0 && <button onClick={clearCart} className="text-[11px] font-bold text-secondary hover:text-red-500 transition-colors bg-gray-50 hover:bg-red-50 px-2.5 py-1 rounded-md border border-bordercolor hover:border-red-100">清空</button>}
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                                         {cart.length === 0 ? (
-                                            <div className="h-full flex flex-col items-center justify-center text-secondary text-sm">未選擇商品</div>
+                                            <div className="h-full flex flex-col items-center justify-center text-secondary opacity-60">
+                                                <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center mb-3"><i className="fas fa-shopping-basket text-lg"></i></div>
+                                                <div className="text-xs font-bold tracking-wider">未選擇商品</div>
+                                            </div>
                                         ) : (
                                             <div className="space-y-4">
                                                 {cart.map(item => (
@@ -452,19 +542,26 @@
                                                             <div className="font-bold text-primary text-sm line-clamp-1">{item.name}</div>
                                                             <div className="text-[11px] text-secondary mt-0.5 font-medium">{item.quantity} x ${item.price}</div>
                                                         </div>
-                                                        <div className="font-bold text-primary w-12 text-right">${(item.quantity * item.price).toFixed(1)}</div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
+                                                                <button onClick={() => handleItemQuantityChange(item, -1)} className="w-7 h-7 rounded flex justify-center items-center text-secondary hover:bg-gray-200"><i className="fas fa-minus text-[10px]"></i></button>
+                                                                <span className="font-bold text-xs w-6 text-center">{item.quantity}</span>
+                                                                <button onClick={() => handleItemQuantityChange(item, 1)} className="w-7 h-7 rounded bg-white shadow-input flex justify-center items-center text-primary border border-gray-200"><i className="fas fa-plus text-[10px]"></i></button>
+                                                            </div>
+                                                            <div className="font-bold text-primary w-12 text-right">${(item.quantity * item.price).toFixed(1)}</div>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-6 bg-gray-50/50 border-t border-bordercolor">
+                                    <div className="p-6 bg-white border-t border-bordercolor">
                                         <div className="flex justify-between items-center mb-6">
                                             <span className="text-sm font-bold text-secondary tracking-wider">總金額</span>
                                             <span className="text-3xl font-black text-primary tracking-tighter">${cartTotal.toFixed(1)}</span>
                                         </div>
-                                        <button onClick={handleCheckout} disabled={cart.length === 0} className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-800 active:scale-[0.98] transition-all">
-                                            確認結帳
+                                        <button onClick={handleCheckout} disabled={cart.length === 0} className="w-full py-4 rounded-xl bg-primary text-white font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-black active:scale-[0.98] transition-all shadow-premium flex justify-center items-center gap-2">
+                                            確認結帳 <i className="fas fa-arrow-right text-[10px]"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -478,7 +575,7 @@
                                     <h1 className="text-2xl font-bold tracking-tight mb-4">系統設定</h1>
                                     
                                     <div className="bg-white border border-bordercolor rounded-3xl p-6 md:p-8 shadow-apple">
-                                        <h3 className="font-bold text-primary text-sm tracking-wide mb-6">快速入帳金額</h3>
+                                        <h3 className="font-bold text-primary text-sm tracking-wide mb-6"><i className="fas fa-bolt text-gray-400 mr-2"></i> 快速入帳金額</h3>
                                         <div className="flex flex-wrap gap-2 mb-6">
                                             {quickAllowances.map((val, idx) => (
                                                 <div key={idx} className="flex items-center bg-gray-50 border border-bordercolor rounded-xl px-3 py-2">
@@ -486,6 +583,7 @@
                                                     <button onClick={() => saveSettings({ quickAllowances: quickAllowances.filter((_, i) => i !== idx) })} className="text-gray-400 hover:text-red-500"><i className="fas fa-times text-xs"></i></button>
                                                 </div>
                                             ))}
+                                            {quickAllowances.length === 0 && <span className="text-sm text-secondary">無預設金額</span>}
                                         </div>
                                         <form onSubmit={(e) => {
                                             e.preventDefault(); 
@@ -499,7 +597,7 @@
                                     </div>
 
                                     <div className="bg-white border border-bordercolor rounded-3xl p-6 md:p-8 shadow-apple">
-                                        <h3 className="font-bold text-primary text-sm tracking-wide mb-6">分類管理</h3>
+                                        <h3 className="font-bold text-primary text-sm tracking-wide mb-6"><i className="fas fa-tags text-gray-400 mr-2"></i> 分類管理</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                                             {categories.map(cat => (
                                                 <div key={cat.id} className="flex justify-between items-center p-3 border border-bordercolor rounded-xl bg-gray-50 group">
@@ -507,6 +605,7 @@
                                                     <button onClick={() => saveSettings({ categories: categories.filter(c => c.id !== cat.id) })} className="text-gray-400 hover:text-red-500"><i className="fas fa-times text-xs"></i></button>
                                                 </div>
                                             ))}
+                                            {categories.length === 0 && <span className="text-sm text-secondary px-2">目前沒有分類。</span>}
                                         </div>
                                         <form onSubmit={(e) => {
                                             e.preventDefault(); const fd = new FormData(e.target);
@@ -521,7 +620,7 @@
 
                                     <div className="bg-white border border-bordercolor rounded-3xl p-6 md:p-8 shadow-apple">
                                         <div className="flex justify-between items-center mb-6">
-                                            <h3 className="font-bold text-primary text-sm tracking-wide">商品管理</h3>
+                                            <h3 className="font-bold text-primary text-sm tracking-wide"><i className="fas fa-box text-gray-400 mr-2"></i> 商品管理</h3>
                                             <span className="bg-gray-100 border border-bordercolor text-primary px-3 py-1 rounded-lg text-xs font-bold">{menuItems.length} 項</span>
                                         </div>
                                         <div className="space-y-3 mb-8 max-h-[400px] overflow-y-auto custom-scrollbar">
@@ -534,7 +633,9 @@
                                                     <button onClick={() => saveSettings({ items: menuItems.filter(i => i.id !== item.id) })} className="w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center"><i className="fas fa-trash-alt text-xs"></i></button>
                                                 </div>
                                             ))}
+                                            {menuItems.length === 0 && <div className="text-center text-secondary text-sm py-10 bg-gray-50 rounded-2xl border border-gray-100">菜單是空的，請由下方新增。</div>}
                                         </div>
+                                        
                                         <form onSubmit={(e) => { 
                                             e.preventDefault(); const fd = new FormData(e.target); 
                                             handleSaveMenuItem({ name: fd.get('name'), price: parseFloat(fd.get('price')), emoji: fd.get('emoji')||'📦', category: fd.get('category') }); e.target.reset(); 
@@ -565,28 +666,59 @@
                             </div>
                         )}
 
-                        {/* 🌟 Journey (首頁) */}
+                        {/* 🌟 所有人可見：Journey (金庫監控台) */}
                         {activeTab === 'journey' && (
-                            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-8">
-                                <div className="max-w-2xl mx-auto pb-24 pt-6 smooth-enter">
-                                    <div className="flex justify-between items-end mb-10 border-b border-bordercolor pb-6">
-                                        <div>
-                                            <h1 className="text-3xl font-bold tracking-tight text-primary">消費旅程</h1>
-                                            <div className="mt-3 inline-flex items-center gap-2 bg-white border border-bordercolor px-3 py-1.5 rounded-lg shadow-sm">
-                                                <span className="text-xs text-secondary font-medium">當前結餘</span>
-                                                <span className="font-bold text-primary text-sm">${totalBalance.toFixed(1)}</span>
-                                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8">
+                                <div className="max-w-4xl mx-auto pb-24 pt-6 smooth-enter">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-primary">財務監控台</h1>
+                                        <div className="inline-flex items-center gap-2 bg-white border border-bordercolor px-3 py-1.5 rounded-lg shadow-sm">
+                                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse-soft"></span>
+                                            <span className="text-[10px] md:text-xs text-secondary font-bold">即時同步中</span>
                                         </div>
-                                        {!isAdmin && (
-                                            <button onClick={() => setIsMomAdding(true)} className="md:hidden bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center shadow-apple active:scale-95 transition-transform">
-                                                <i className="fas fa-plus"></i>
-                                            </button>
-                                        )}
                                     </div>
 
+                                    {/* 專業版大數據卡片 */}
+                                    <div className="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-[2rem] p-8 md:p-10 text-white shadow-apple relative overflow-hidden mb-10">
+                                        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                                        <div className="relative z-10 flex flex-col md:flex-row md:justify-between md:items-end gap-6">
+                                            <div>
+                                                <div className="text-xs font-medium text-teal-100 mb-2 tracking-wider flex items-center gap-2">
+                                                    <i className="fas fa-shield-alt"></i> 當前金庫結餘
+                                                </div>
+                                                <div className="text-6xl md:text-7xl font-black tracking-tighter mb-6 md:mb-0">${totalBalance.toFixed(1)}</div>
+                                            </div>
+                                            
+                                            {!isAdmin && (
+                                                <button onClick={() => setIsMomAdding(true)} className="w-full md:w-auto bg-white text-teal-600 px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-gray-50 hover:scale-[0.98] transition-all flex items-center justify-center gap-2 active:scale-95">
+                                                    <i className="fas fa-hand-holding-usd text-lg"></i> 撥款入帳
+                                                </button>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex gap-10 md:gap-16 mt-8 md:mt-12 border-t border-white/20 pt-6 relative z-10">
+                                            <div>
+                                                <div className="text-[11px] text-teal-100 mb-1 tracking-wider font-bold">累積總支出</div>
+                                                <div className="text-2xl font-bold">${totalExpense.toFixed(1)}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-[11px] text-teal-100 mb-1 tracking-wider font-bold">累積總收入</div>
+                                                <div className="text-2xl font-bold">${totalIncome.toFixed(1)}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 交易紀錄區塊 */}
+                                    <div className="flex items-center gap-3 mb-6 px-1">
+                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-secondary">
+                                            <i className="fas fa-list-ul text-sm"></i>
+                                        </div>
+                                        <h2 className="text-lg font-bold text-primary">詳細消費旅程</h2>
+                                    </div>
+                                    
                                     <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 md:before:ml-6 before:-translate-x-px before:w-0.5 before:bg-bordercolor">
                                         {groupedTransactions.length === 0 ? (
-                                            <div className="text-center py-20 text-secondary text-sm font-medium relative z-10 bg-background">目前冇任何紀錄。</div>
+                                            <div className="text-center py-20 text-secondary text-sm font-medium relative z-10 bg-background">目前金庫沒有任何紀錄。</div>
                                         ) : (
                                             groupedTransactions.map((group, index) => <GroupedTimelineDay key={index} group={group} isAdmin={isAdmin} onDelete={handleDeleteTransaction} />)
                                         )}
@@ -595,7 +727,7 @@
                             </div>
                         )}
 
-                        {/* 👑 History */}
+                        {/* 👑 【管理員】歷史紀錄 */}
                         {activeTab === 'history' && isAdmin && (
                             <div className="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-8">
                                 <div className="max-w-4xl mx-auto pb-24 pt-6 smooth-enter">
