@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- PWA 標籤 -->
+    
+    <!-- PWA 核心設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#09090b">
+    <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/GitHub_Invertocat_Logo.svg/180px-GitHub_Invertocat_Logo.svg.png">
     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoi5qCh5ZyS5bCP6LOj6YOoIFBPUyIsInNob3J0X25hbWUiOiJQT1MiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI2ZhZmFmYSIsInRoZW1lX2NvbG9yIjoiIzA5MDkwYiIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWwsJTNDc3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAlM0UlM0NyZWN0IHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJyByeD0nMjAnIGZpbGw9JyUyMzA5MDkwYiclMkYlM0UlM0N0ZXh0IHg9JzUwJyB5PSc2NScgZm9udC1zaXplPSc1MCcgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nJTIzZmFmYWZhJyUzRSVGMCU5RiU4QyU5NCUzQyUyRnRleHQlM0UlM0MlMkZzdmclM0UiLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2Uvc3ZnK3htbCIsInB1cnBvc2UiOiJhbnkgbWFza2FibGUifV19">
-    <title>校園小賣部 - 頂級香港版</title>
+    
+    <title>小賣部 POS</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Firebase Compat (CDN) -->
+    <!-- ⚠️ 使用 Compat 版本 Firebase 避免 Import 錯誤 -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -26,11 +28,11 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script>
-        // PWA Service Worker 動態註冊
+        // PWA Service Worker (確保離線緩存框架)
         if ('serviceWorker' in navigator) {
             const swCode = "self.addEventListener('install', e => e.waitUntil(self.skipWaiting())); self.addEventListener('activate', e => e.waitUntil(self.clients.claim())); self.addEventListener('fetch', e => {});";
             const blob = new Blob([swCode], { type: 'application/javascript' });
-            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(console.error);
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
         }
 
         tailwind.config = {
@@ -46,12 +48,7 @@
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        body { 
-            background-color: #fafafa; background-image: radial-gradient(#e4e4e7 1px, transparent 1px); background-size: 24px 24px;
-            color: #09090b; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; height: 100dvh; touch-action: manipulation; 
-        }
-        
+        body { background-color: #fafafa; background-image: radial-gradient(#e4e4e7 1px, transparent 1px); background-size: 24px 24px; color: #09090b; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; height: 100dvh; touch-action: manipulation; }
         @keyframes slide-up { 0% { transform: translateY(12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
         .animate-enter { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes fade { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -60,8 +57,6 @@
         .animate-drawer { animation: drawer-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .animate-spin-slow { animation: spin-slow 2s linear infinite; }
 
         .custom-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -79,7 +74,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
-        // 真實 Firebase 資料
+        // 🔗 你的專屬 Firebase 配置
         const MY_FIREBASE_CONFIG = {
             apiKey: "AIzaSyABwRKNU_Y2myY1GYEKR3xE90qHCEZhnA0",
             authDomain: "tuckshop-ab288.firebaseapp.com",
@@ -110,16 +105,15 @@
         function App() {
             const [db, setDb] = useState(null);
             const [user, setUser] = useState(null);
-            const [isAdmin, setIsAdmin] = useState(false);
+            const [errorMsg, setErrorMsg] = useState('');
+            
             const [transactions, setTransactions] = useState([]);
+            const [categories, setCategories] = useState([]);
+            const [menuItems, setMenuItems] = useState([]);
+            const [quickAllowances, setQuickAllowances] = useState([]);
             
-            const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-            const [menuItems, setMenuItems] = useState(INITIAL_MENU_ITEMS);
-            const [quickAllowances, setQuickAllowances] = useState(INITIAL_QUICK_ALLOWANCES);
-            
-            const [activeTab, setActiveTab] = useState('journey'); 
-            const [loading, setLoading] = useState(true);
-            
+            const [activeTab, setActiveTab] = useState('overview'); 
+            const [simulatedRole, setSimulatedRole] = useState(null); 
             const [cart, setCart] = useState([]);
             const [isCartModalOpen, setIsCartModalOpen] = useState(false); 
             const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
@@ -127,7 +121,7 @@
 
             const todayStr = new Date().toLocaleDateString('zh-HK', { month: 'short', day: 'numeric', weekday: 'short' });
 
-            // 1. 初始化 Firebase 與真實 Auth 邏輯
+            // 1. 初始化 Firebase
             useEffect(() => {
                 const initFirebase = async () => {
                     try {
@@ -136,82 +130,75 @@
                         const firestoreDb = firebase.firestore();
                         setDb(firestoreDb);
 
-                        // 監聽登入狀態
-                        auth.onAuthStateChanged(async (currentUser) => {
+                        // 判斷是否為使用者自訂的 API Key，避免使用環境提供的 __initial_auth_token 引發 token mismatch
+                        const isCustomConfig = MY_FIREBASE_CONFIG.apiKey && MY_FIREBASE_CONFIG.apiKey.length > 0;
+
+                        if (!isCustomConfig && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await auth.signInWithCustomToken(__initial_auth_token);
+                        } else {
+                            // 使用自訂 API 時，直接透過匿名登入
+                            await auth.signInAnonymously();
+                        }
+                        
+                        auth.onAuthStateChanged((currentUser) => {
+                            setUser(currentUser);
                             if (currentUser) {
-                                setUser(currentUser);
-                                // 判斷是否為管理員
-                                if (currentUser.email === ADMIN_EMAIL) {
-                                    setIsAdmin(true);
-                                    setActiveTab('overview');
-                                } else {
-                                    setIsAdmin(false);
-                                    setActiveTab('journey');
-                                }
-                                setLoading(false);
-                            } else {
-                                // 若未登入，強制進行「匿名登入」，成為訪客(媽媽)
-                                try {
-                                    await auth.signInAnonymously();
-                                } catch (err) {
-                                    console.error("匿名登入失敗:", err);
-                                    setLoading(false);
-                                }
+                                if (currentUser.email === ADMIN_EMAIL) setActiveTab('overview');
+                                else setActiveTab('journey');
                             }
                         });
                     } catch (error) { 
-                        console.error("Firebase 初始化失敗:", error); 
-                        setLoading(false); 
+                        console.error(error); 
+                        setErrorMsg('連線資料庫失敗，請確保在 Firebase Auth 中已開啟「匿名登入 (Anonymous)」。');
                     }
                 };
                 initFirebase();
             }, []);
 
-            // 2. 處理 Google 管理員登入 / 登出 (純淨版，移除本地錯誤處理)
-            const handleGoogleLogin = async () => {
-                try {
-                    const provider = new firebase.auth.GoogleAuthProvider();
-                    await firebase.auth().signInWithPopup(provider);
-                } catch (error) {
-                    console.error("Google 登入失敗", error);
-                }
-            };
-
-            const handleLogout = async () => {
-                try {
-                    await firebase.auth().signOut();
-                    // 登出後 onAuthStateChanged 會觸發，自動轉為匿名身分
-                } catch (error) {
-                    console.error("登出失敗", error);
-                }
-            };
-
-            // 3. 資料監聽
+            // 2. 實時監聽資料表 (強制遵守 artifacts 路徑以避免跨網域權限問題)
             useEffect(() => {
                 if (!db || !user) return;
-                const appId = 'tuckshop_main';
+                
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuckshop-ab288';
                 
                 const txRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions');
                 const unsubTx = txRef.onSnapshot((snapshot) => {
+                    setErrorMsg(''); // 成功讀取，清除錯誤
                     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    data.sort((a, b) => b.timestamp - a.timestamp); // 降序
+                    data.sort((a, b) => b.timestamp - a.timestamp);
                     setTransactions(data);
+                }, (error) => {
+                    console.error("Firestore 權限錯誤:", error);
+                    if (error.code === 'permission-denied') {
+                        setErrorMsg('資料庫權限不足！請前往您的 Firebase Console -> Firestore Database -> Rules，將規則修改為 allow read, write: if true;');
+                    }
                 });
 
                 const settingsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('admin_config');
                 const unsubSettings = settingsRef.onSnapshot((docSnap) => {
                     if (docSnap.exists) {
                         const data = docSnap.data();
-                        if(data.items) setMenuItems(data.items);
-                        if(data.categories) setCategories(data.categories);
-                        if(data.quickAllowances) setQuickAllowances(data.quickAllowances);
+                        setMenuItems(data.items || []);
+                        setCategories(data.categories || []);
+                        setQuickAllowances(data.quickAllowances || []);
+                    } else {
+                        // 建立預設資料
+                        settingsRef.set({
+                            categories: INITIAL_CATEGORIES,
+                            items: INITIAL_MENU_ITEMS,
+                            quickAllowances: INITIAL_QUICK_ALLOWANCES
+                        }).catch(e => console.error("寫入預設設定失敗:", e));
                     }
+                }, (error) => {
+                     // 忽略重複報錯，讓上面 txRef 處理即可
                 });
 
                 return () => { unsubTx(); unsubSettings(); };
             }, [db, user]);
+
+            const isAdmin = user && user.email === ADMIN_EMAIL;
             
-            // 4. 計算總餘額與圖表數據
+            // 3. 計算餘額與圖表
             const { totalBalance, totalExpense, totalIncome, expenseData } = useMemo(() => {
                 let expense = 0, income = 0;
                 const catTotals = {};
@@ -223,38 +210,26 @@
                 return { totalBalance: income - expense, totalExpense: expense, totalIncome: income, expenseData: catTotals };
             }, [transactions]);
 
-            // 5. 計算帶有「即時結餘」的交易紀錄
             const transactionsWithBalance = useMemo(() => {
                 let currentBalance = 0;
-                const reversed = [...transactions].reverse(); // 改為升序計算
+                const reversed = [...transactions].reverse(); 
                 const processed = reversed.map(tx => {
                     const amt = parseFloat(tx.amount) || 0;
-                    if (tx.type === 'income') currentBalance += amt;
-                    else currentBalance -= amt;
+                    if (tx.type === 'income') currentBalance += amt; else currentBalance -= amt;
                     return { ...tx, runningBalance: currentBalance };
                 });
-                return processed.reverse(); // 回復降序
+                return processed.reverse(); 
             }, [transactions]);
 
-            // 6. 按日分組交易紀錄
             const groupedTransactions = useMemo(() => {
-                const result = [];
-                let currentDate = null;
-                let currentGroup = null;
-
+                const result = []; let currentDate = null; let currentGroup = null;
                 transactionsWithBalance.forEach(tx => {
                     const dStr = new Date(tx.timestamp).toLocaleDateString('zh-HK', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
                     if (dStr !== currentDate) {
                         if (currentGroup) result.push(currentGroup);
                         currentDate = dStr;
-                        currentGroup = { 
-                            date: dStr, 
-                            items: [tx],
-                            endOfDayBalance: tx.runningBalance 
-                        };
-                    } else {
-                        currentGroup.items.push(tx);
-                    }
+                        currentGroup = { date: dStr, items: [tx], endOfDayBalance: tx.runningBalance };
+                    } else { currentGroup.items.push(tx); }
                 });
                 if (currentGroup) result.push(currentGroup);
                 return result;
@@ -278,71 +253,110 @@
             const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-            // ⚡ 解決結帳延遲：Optimistic UI + Batch Write
+            // ⚡ 零延遲批次結帳
             const handleCheckout = async () => {
                 if (!db || !user || cart.length === 0) return;
-                const appId = 'tuckshop_main';
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuckshop-ab288';
                 const batchTime = Date.now(); 
-                const currentCart = [...cart]; // 快取購物車資料
+                const currentCart = [...cart]; 
                 
-                // 樂觀更新 UI
                 setCart([]); 
                 setIsCartModalOpen(false); 
                 setActiveTab('overview');
 
                 try {
                     const batch = db.batch();
+                    const txRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions');
                     for (const item of currentCart) {
                         for (let i = 0; i < item.quantity; i++) {
-                            const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').doc();
+                            const docRef = txRef.doc();
                             batch.set(docRef, {
                                 type: 'expense', amount: item.price, category: item.category, itemName: item.name, emoji: item.emoji || '📦',
                                 timestamp: batchTime, createdBy: ADMIN_EMAIL, batchId: `batch_${batchTime}`
                             });
                         }
                     }
-                    await batch.commit(); // 於背景非同步提交
-                } catch (error) {
-                    console.error("結帳失敗:", error);
-                }
+                    await batch.commit();
+                } catch (error) { console.error("結帳失敗:", error); }
             };
 
             const handleAddIncome = async (amount, itemName) => {
                 if (!db || !user || amount <= 0) return;
-                const appId = 'tuckshop_main';
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuckshop-ab288';
                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').add({
                     type: 'income', amount, category: 'allowance', itemName: itemName || '撥款入帳', emoji: '💰',
-                    timestamp: Date.now(), createdBy: 'mom@family.com'
+                    timestamp: Date.now(), createdBy: user.email || 'Anonymous'
                 });
                 setIsMomAdding(false);
             };
 
             const handleDeleteTransaction = async (id) => {
                 if (!isAdmin) return;
-                const appId = 'tuckshop_main';
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuckshop-ab288';
                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('transactions').doc(id).delete();
             };
 
             const saveSettings = async (updates) => {
-                if (updates.items) setMenuItems(updates.items);
-                if (updates.categories) setCategories(updates.categories);
-                if (updates.quickAllowances) setQuickAllowances(updates.quickAllowances);
-                
                 if (db) {
-                    const appId = 'tuckshop_main';
+                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuckshop-ab288';
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('settings').doc('admin_config').set(updates, { merge: true });
                 }
             };
 
             // ==========================================
-            // 視圖 1：載入中畫面
+            // 視圖：錯誤狀態
             // ==========================================
-            if (loading) {
+            if (errorMsg) {
                 return (
-                    <div className="flex h-[100dvh] items-center justify-center bg-background">
-                        <div className="flex flex-col items-center gap-4">
-                            <i className="fas fa-circle-notch text-3xl text-primary animate-spin-slow"></i>
-                            <div className="text-sm font-medium text-secondary">系統載入中...</div>
+                    <div className="flex h-[100dvh] items-center justify-center p-6 bg-background">
+                        <div className="w-full max-w-lg bg-red-50 border-2 border-red-200 rounded-3xl p-8 text-center shadow-lg">
+                            <i className="fas fa-shield-alt text-4xl text-red-400 mb-4"></i>
+                            <h2 className="text-xl font-bold text-red-700 mb-3">資料庫連接失敗</h2>
+                            <p className="text-sm text-red-600 font-medium leading-relaxed">{errorMsg}</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // ==========================================
+            // 視圖 1：真實登入介面
+            // ==========================================
+            if (!user) {
+                return (
+                    <div className="flex h-[100dvh] items-center justify-center p-6">
+                        <div className="w-full max-w-sm bg-surface/90 backdrop-blur-xl border border-bordercolor rounded-[32px] shadow-premium p-8 animate-enter">
+                            <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-6">
+                                <div className="w-12 h-12 bg-primary text-white rounded-2xl flex items-center justify-center shadow-md"><i className="fas fa-layer-group text-lg"></i></div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-primary leading-tight">系統登入</h1>
+                                    <p className="text-xs text-secondary font-medium">Google & 訪客驗證</p>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <button onClick={async () => {
+                                    const provider = new firebase.auth.GoogleAuthProvider();
+                                    try { await firebase.auth().signInWithPopup(provider); } 
+                                    catch (err) { console.error("Google 登入失敗", err); alert("登入失敗，請確認已在 Firebase 打開 Google 登入功能。"); }
+                                }} className="w-full flex items-center p-5 border border-bordercolor rounded-2xl hover:border-primary hover:shadow-premium-hover transition-all text-left group bg-white shadow-sm">
+                                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-8 h-8 mr-4" alt="Google" />
+                                    <div className="flex-1">
+                                        <div className="font-bold text-primary text-sm">Google 登入</div>
+                                        <div className="text-[11px] text-secondary mt-0.5 font-medium">管理員專屬通道</div>
+                                    </div>
+                                </button>
+                                <button onClick={async () => {
+                                    try { await firebase.auth().signInAnonymously(); } 
+                                    catch (err) { console.error("訪客登入失敗", err); alert("登入失敗，請確認已在 Firebase 打開 匿名登入 功能。"); }
+                                }} className="w-full flex items-center p-5 border border-bordercolor rounded-2xl hover:border-primary hover:shadow-premium-hover transition-all text-left group bg-surface">
+                                    <div className="w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center mr-4 group-hover:bg-primary group-hover:text-white transition-colors"><i className="fas fa-user-secret text-sm"></i></div>
+                                    <div className="flex-1">
+                                        <div className="font-bold text-primary text-sm">訪客 / 媽媽登入</div>
+                                        <div className="text-[11px] text-secondary mt-0.5 font-medium">免密碼觀看消費紀錄</div>
+                                    </div>
+                                    <i className="fas fa-chevron-right text-gray-300 group-hover:text-primary text-xs"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 );
@@ -360,13 +374,17 @@
                     <header className="h-[72px] bg-surface/80 backdrop-blur-lg border-b border-bordercolor px-4 md:px-6 flex justify-between items-center shrink-0 z-20 sticky top-0">
                         <div className="flex items-center gap-8">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-md">
-                                    {isAdmin ? 'A' : 'M'}
-                                </div>
+                                {user.photoURL ? (
+                                    <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-lg shadow-md object-cover" />
+                                ) : (
+                                    <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-md">
+                                        {isAdmin ? 'A' : 'M'}
+                                    </div>
+                                )}
                                 <div className="hidden sm:block">
                                     <span className="font-bold text-base tracking-tight text-primary block leading-tight">{isAdmin ? '管理工作台' : '消費旅程'}</span>
                                     <span className="text-[10px] text-secondary font-medium tracking-wide flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-soft"></span> 實時同步
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-soft"></span> 即時雲端同步
                                     </span>
                                 </div>
                             </div>
@@ -385,27 +403,18 @@
                             </nav>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4">
                             <div className="hidden md:block text-xs font-medium text-secondary bg-gray-100 px-3 py-1.5 rounded-md border border-gray-200">
                                 {todayStr}
                             </div>
-
-                            {!isAdmin ? (
-                                <>
-                                    <button onClick={() => setIsMomAdding(true)} className="hidden md:flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-all shadow-premium hover:shadow-premium-hover hover:-translate-y-0.5">
-                                        <i className="fas fa-plus text-xs"></i> 撥款入帳
-                                    </button>
-                                    {/* Google 登入按鈕 (給管理員用) */}
-                                    <button onClick={handleGoogleLogin} className="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all" title="管理員登入">
-                                        <i className="fab fa-google"></i>
-                                    </button>
-                                </>
-                            ) : (
-                                /* 登出按鈕 */
-                                <button onClick={handleLogout} className="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-red-50 hover:text-red-500 border border-transparent hover:border-red-100 transition-all" title="登出管理員">
-                                    <i className="fas fa-sign-out-alt"></i>
+                            {!isAdmin && (
+                                <button onClick={() => setIsMomAdding(true)} className="hidden md:flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-black transition-all shadow-premium hover:shadow-premium-hover hover:-translate-y-0.5">
+                                    <i className="fas fa-plus text-xs"></i> 撥款入帳
                                 </button>
                             )}
+                            <button onClick={() => firebase.auth().signOut()} className="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all">
+                                <i className="fas fa-sign-out-alt"></i>
+                            </button>
                         </div>
                     </header>
 
@@ -455,9 +464,6 @@
                                             </div>
                                             <div className="text-center w-full">
                                                 <div className="font-bold text-primary text-base">消費分佈</div>
-                                                <div className="text-xs text-secondary mt-1 flex justify-center items-center gap-1.5">
-                                                    <span className="w-2 h-2 rounded-full bg-primary block"></span> 分析圖表
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -493,7 +499,6 @@
                         {activeTab === 'pos' && isAdmin && (
                             <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden px-4 md:px-6 gap-6 max-w-[1400px] mx-auto w-full animate-enter pb-4 md:pb-6 pt-4">
                                 
-                                {/* 左側：商品區 */}
                                 <div className="w-full md:w-[65%] flex flex-col h-full bg-surface/80 backdrop-blur-sm rounded-3xl border border-bordercolor shadow-premium overflow-hidden">
                                     <div className="px-6 py-4 border-b border-bordercolor flex gap-2 overflow-x-auto no-scrollbar shrink-0 bg-white">
                                         <button onClick={() => setActiveCategoryFilter('all')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === 'all' ? 'bg-primary text-white border-primary shadow-md' : 'bg-surface text-secondary border-bordercolor hover:border-gray-300'}`}>全部</button>
@@ -509,7 +514,7 @@
                                             <div className="h-full flex flex-col items-center justify-center">
                                                 <div className="w-16 h-16 bg-gray-50 border border-bordercolor rounded-2xl flex items-center justify-center text-gray-300 mb-4 shadow-sm"><i className="fas fa-search text-xl"></i></div>
                                                 <div className="text-sm font-bold text-primary">找不到商品</div>
-                                                <div className="text-xs text-secondary mt-1">請於設定中新增。</div>
+                                                <div className="text-xs text-secondary mt-1">請於「系統設定」中新增。</div>
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -614,7 +619,6 @@
                                 <div className="max-w-4xl mx-auto pb-24 pt-6 space-y-8 animate-enter">
                                     <h1 className="text-2xl font-bold tracking-tight mb-2">系統設定</h1>
                                     
-                                    {/* 快速入帳設定 */}
                                     <div className="bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl p-6 md:p-8 shadow-premium">
                                         <div className="flex items-center gap-3 mb-6">
                                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-primary border border-gray-200"><i className="fas fa-bolt text-xs"></i></div>
@@ -643,7 +647,6 @@
                                         </form>
                                     </div>
 
-                                    {/* 分類管理 */}
                                     <div className="bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl p-6 md:p-8 shadow-premium">
                                         <div className="flex items-center gap-3 mb-6">
                                             <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-primary border border-gray-200"><i className="fas fa-tags text-xs"></i></div>
@@ -672,7 +675,6 @@
                                         </form>
                                     </div>
 
-                                    {/* 菜單管理 */}
                                     <div className="bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl p-6 md:p-8 shadow-premium">
                                         <div className="flex justify-between items-center mb-6">
                                             <div className="flex items-center gap-3">
@@ -729,17 +731,17 @@
                         )}
 
                         {/* ==========================================
-                            👩 【媽媽/訪客】消費旅程
+                            👩 【媽媽】Journey
                             ========================================== */}
                         {activeTab === 'journey' && !isAdmin && (
                             <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8">
-                                <div className="max-w-2xl mx-auto pb-24 pt-4 animate-enter">
+                                <div className="max-w-2xl mx-auto pb-24 pt-6 animate-enter">
                                     <div className="flex justify-between items-end mb-10 border-b border-bordercolor pb-6">
                                         <div>
                                             <h1 className="text-3xl font-bold tracking-tight text-primary">消費旅程</h1>
                                             <div className="mt-2 inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
                                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                                                <span className="text-xs text-secondary font-medium">可用餘額</span>
+                                                <span className="text-xs text-secondary font-medium">當前結餘</span>
                                                 <span className="font-bold text-primary text-sm">${totalBalance.toFixed(1)}</span>
                                             </div>
                                         </div>
@@ -867,7 +869,8 @@
                                         <button type="submit" className="w-full mt-8 py-3.5 text-white bg-primary rounded-xl font-bold text-sm hover:bg-black active:scale-95 transition-all shadow-premium">確認撥款</button>
                                     </form>
                                 </div>
-                            </div                        </div>
+                            </div>
+                        </div>
                     )}
                 </div>
             );
@@ -914,7 +917,6 @@
 
         function GroupedTimelineDay({ group }) {
             const dailyExpense = group.items.filter(i => i.type === 'expense').reduce((sum, i) => sum + parseFloat(i.amount), 0);
-            
             return (
                 <div className="flex gap-4 md:gap-5 animate-enter relative z-10">
                     <div className="flex flex-col items-center pt-1.5">
@@ -926,7 +928,7 @@
                             <div className="text-[10px] text-secondary font-medium flex items-center gap-2">
                                 {dailyExpense > 0 && <span>是日消費: <span className="font-bold text-primary">${dailyExpense.toFixed(1)}</span></span>}
                                 <span className="bg-surface border border-bordercolor px-2 py-0.5 rounded-md text-primary font-bold shadow-sm">
-                                    結餘: ${group.endOfDayBalance.toFixed(1)}
+                                    結餘: ${(group.endOfDayBalance || 0).toFixed(1)}
                                 </span>
                             </div>
                         </div>
