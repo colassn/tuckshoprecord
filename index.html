@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#09090b">
-    <title>小賣部 POS</title>
+    <title>校園小賣部 財務系統</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
+    <!-- React & Babel -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -23,31 +23,31 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { primary: '#09090b', secondary: '#71717a', background: '#fafafa', surface: '#ffffff', bordercolor: '#e4e4e7', accent: '#18181b' },
-                    fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'] },
-                    boxShadow: { 'premium': '0 2px 8px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.02)', 'premium-hover': '0 12px 24px -8px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04)', 'input': '0 1px 2px 0 rgba(0, 0, 0, 0.05)' }
+                    colors: { 
+                        primary: '#000000', 
+                        secondary: '#737373', 
+                        background: '#FAFAFA', 
+                        surface: '#FFFFFF',
+                        bordercolor: '#E5E5E5'
+                    },
+                    fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'] },
+                    boxShadow: { 'apple': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)' }
                 }
             }
         }
     </script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        body { background-color: #fafafa; background-image: radial-gradient(#e4e4e7 1px, transparent 1px); background-size: 24px 24px; color: #09090b; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; height: 100dvh; touch-action: manipulation; }
-        @keyframes slide-up { 0% { transform: translateY(12px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-        .animate-enter { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fade { 0% { opacity: 0; } 100% { opacity: 1; } }
-        .animate-fade { animation: fade 0.2s ease-out forwards; }
-        @keyframes drawer-up { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
-        .animate-drawer { animation: drawer-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .animate-pulse-soft { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        .custom-scrollbar::-webkit-scrollbar { width: 0px; height: 0px; }
+        body { background-color: #FAFAFA; color: #000000; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; height: 100dvh; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .input-premium { width: 100%; background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 12px; padding: 12px 16px; font-size: 14px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: all 0.2s ease; outline: none; }
-        .input-premium:focus { border-color: #09090b; box-shadow: 0 0 0 2px rgba(9, 9, 11, 0.1); }
-        .receipt-divider { border-top: 2px dashed #e4e4e7; margin: 16px 0; }
+        
+        .smooth-enter { animation: smoothUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes smoothUp { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+        
+        .input-box { width: 100%; background-color: #F5F5F5; border: 1.5px solid transparent; border-radius: 12px; padding: 14px 16px; font-size: 15px; font-weight: 500; transition: all 0.2s; outline: none; }
+        .input-box:focus { background-color: #FFFFFF; border-color: #000000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
@@ -56,6 +56,7 @@
     <script type="text/babel">
         const { useState, useEffect, useMemo } = React;
 
+        // 🔗 你專屬的真實 Firebase 配置
         const MY_FIREBASE_CONFIG = {
             apiKey: "AIzaSyABwRKNU_Y2myY1GYEKR3xE90qHCEZhnA0",
             authDomain: "tuckshop-ab288.firebaseapp.com",
@@ -68,10 +69,23 @@
 
         const ADMIN_EMAIL = 'chimhinhin@gmail.com';
 
+        // 預設資料 (防白屏用)
+        const DEFAULT_CATEGORIES = [
+            { id: 'lunch', name: '午餐', emoji: '🍱' },
+            { id: 'drinks', name: '飲品', emoji: '🥤' },
+            { id: 'snacks', name: '零食', emoji: '🍫' },
+            { id: 'stationery', name: '文具', emoji: '✏️' }
+        ];
+        const DEFAULT_ITEMS = [
+            { id: 'm1', name: '燒賣魚蛋', price: 15, category: 'snacks', emoji: '🍢' },
+            { id: 'm2', name: '檸檬茶', price: 8, category: 'drinks', emoji: '🧃' },
+            { id: 'm3', name: '學校午餐', price: 35, category: 'lunch', emoji: '🍛' }
+        ];
+        const DEFAULT_ALLOWANCES = [20, 50, 100];
+
         function App() {
             const [db, setDb] = useState(null);
             const [user, setUser] = useState(null);
-            const [errorMsg, setErrorMsg] = useState('');
             const [isInitializing, setIsInitializing] = useState(true);
             
             const [transactions, setTransactions] = useState([]);
@@ -85,83 +99,98 @@
             const [activeCategoryFilter, setActiveCategoryFilter] = useState('all');
             const [isMomAdding, setIsMomAdding] = useState(false);
 
-            const todayStr = new Date().toLocaleDateString('zh-HK', { month: 'short', day: 'numeric', weekday: 'short' });
+            // 新增：模擬管理員狀態 (用於預覽環境)
+            const [isMockAdmin, setIsMockAdmin] = useState(false);
 
-            // 1. 初始化
+            // 1. 初始化 Firebase 及登入
             useEffect(() => {
-                const initFirebase = async () => {
-                    // 自動攔截 file:// 錯誤
-                    if (window.location.protocol === 'file:') {
-                        setErrorMsg('Google 安全機制禁止從本地 (file://) 直接登入。請使用 VS Code 的 Live Server 打開，或上傳至伺服器。');
-                        setIsInitializing(false);
-                        return;
-                    }
+                const initAuth = async () => {
+                    if (!firebase.apps.length) firebase.initializeApp(MY_FIREBASE_CONFIG);
+                    const auth = firebase.auth();
+                    const firestoreDb = firebase.firestore();
+                    setDb(firestoreDb);
 
-                    try {
-                        if (!firebase.apps.length) firebase.initializeApp(MY_FIREBASE_CONFIG);
-                        const auth = firebase.auth();
-                        const firestoreDb = firebase.firestore();
-                        setDb(firestoreDb);
-
-                        auth.onAuthStateChanged(async (currentUser) => {
-                            if (currentUser) {
-                                setUser(currentUser);
-                                if (currentUser.email === ADMIN_EMAIL) setActiveTab('overview');
+                    auth.onAuthStateChanged(async (currentUser) => {
+                        if (currentUser) {
+                            setUser(currentUser);
+                            if (currentUser.email === ADMIN_EMAIL) setActiveTab('overview');
+                            setIsInitializing(false);
+                        } else {
+                            // 未登入時自動使用匿名登入
+                            try {
+                                await auth.signInAnonymously();
+                            } catch (e) {
+                                console.error("匿名登入失敗:", e);
+                                alert("系統連接失敗，請確保在 Firebase Authentication 中已開啟「Anonymous (匿名)」登入。");
                                 setIsInitializing(false);
-                            } else {
-                                try { await auth.signInAnonymously(); } 
-                                catch (err) { 
-                                    console.error("匿名登入失敗:", err);
-                                    setErrorMsg('驗證失敗。請確保 Firebase Auth 已啟用「匿名登入」。');
-                                    setIsInitializing(false);
-                                }
                             }
-                        });
-                    } catch (error) { 
-                        console.error(error); 
-                        setErrorMsg('連線資料庫失敗。');
-                        setIsInitializing(false);
-                    }
+                        }
+                    });
                 };
-                initFirebase();
+                initAuth();
             }, []);
 
-            // 2. 監聽全新的乾淨根目錄資料庫
+            // 獲取安全的路徑引用
+            const getDbRef = () => db.collection('artifacts').doc('tuckshop-ab288').collection('public').doc('data');
+
+            // 2. 資料庫讀取與自動開荒
             useEffect(() => {
                 if (!db || !user) return;
                 
-                // 【重構】：直接使用根目錄，拋棄舊有的複雜路徑
-                const txRef = db.collection('transactions');
-                const unsubTx = txRef.onSnapshot((snapshot) => {
-                    setErrorMsg('');
+                // 讀取流水帳
+                const unsubTx = getDbRef().collection('transactions').onSnapshot((snapshot) => {
                     const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     data.sort((a, b) => b.timestamp - a.timestamp);
                     setTransactions(data);
                 }, (error) => {
-                    console.error("Firestore 權限錯誤:", error);
+                    console.error("Transactions Error:", error);
                     if (error.code === 'permission-denied') {
-                        setErrorMsg('資料庫權限不足！請確實將 Firebase Rules 更新為最新版本。');
+                        alert("資料庫權限不足！請前往 Firebase Console -> Firestore -> Rules 確保已設定 allow read, write: if true;");
                     }
                 });
 
-                const settingsRef = db.collection('settings').doc('config');
-                const unsubSettings = settingsRef.onSnapshot((docSnap) => {
+                // 讀取設定檔
+                const unsubSettings = getDbRef().collection('settings').doc('config').onSnapshot((docSnap) => {
                     if (docSnap.exists) {
                         const data = docSnap.data();
                         setMenuItems(data.items || []);
                         setCategories(data.categories || []);
                         setQuickAllowances(data.quickAllowances || []);
+                    } else {
+                        // 【防白屏】如果資料庫係空嘅，自動寫入預設資料
+                        getDbRef().collection('settings').doc('config').set({
+                            categories: DEFAULT_CATEGORIES,
+                            items: DEFAULT_ITEMS,
+                            quickAllowances: DEFAULT_ALLOWANCES
+                        }).catch(e => console.error("寫入預設設定失敗:", e));
                     }
-                });
+                }, (error) => console.error("Settings Error:", error));
 
                 return () => { unsubTx(); unsubSettings(); };
             }, [db, user]);
 
-            const isAdmin = user && user.email === ADMIN_EMAIL;
-            
+            const isAdmin = (user && user.email === ADMIN_EMAIL) || isMockAdmin;
+
+            // Google 登入 (修復跳轉 Bug 及預覽環境限制)
+            const handleAdminLogin = async () => {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await firebase.auth().signInWithPopup(provider);
+                } catch (err) {
+                    console.error("Google 登入失敗:", err);
+                    if (err.code === 'auth/operation-not-supported-in-this-environment') {
+                        setIsMockAdmin(true);
+                        setActiveTab('overview');
+                        alert("提示：當前預覽環境限制了 Google 彈窗登入，已自動為您開啟「模擬管理員模式」。若要使用真實登入，請將網頁部署或使用 Live Server 於本機開啟。");
+                    } else if(err.code !== 'auth/popup-closed-by-user') {
+                        alert("登入失敗: " + err.message);
+                    }
+                }
+            };
+
+            // 數據結算
             const { totalBalance, totalExpense, totalIncome, expenseData } = useMemo(() => {
-                let expense = 0, income = 0;
-                const catTotals = {};
+                let expense = 0, income = 0; const catTotals = {};
                 transactions.forEach(tx => {
                     const amt = parseFloat(tx.amount) || 0;
                     if (tx.type === 'expense') { expense += amt; catTotals[tx.category] = (catTotals[tx.category] || 0) + amt; } 
@@ -170,7 +199,7 @@
                 return { totalBalance: income - expense, totalExpense: expense, totalIncome: income, expenseData: catTotals };
             }, [transactions]);
 
-            const transactionsWithBalance = useMemo(() => {
+            const groupedTransactions = useMemo(() => {
                 let currentBalance = 0;
                 const reversed = [...transactions].reverse(); 
                 const processed = reversed.map(tx => {
@@ -178,12 +207,9 @@
                     if (tx.type === 'income') currentBalance += amt; else currentBalance -= amt;
                     return { ...tx, runningBalance: currentBalance };
                 });
-                return processed.reverse(); 
-            }, [transactions]);
-
-            const groupedTransactions = useMemo(() => {
+                
                 const result = []; let currentDate = null; let currentGroup = null;
-                transactionsWithBalance.forEach(tx => {
+                processed.reverse().forEach(tx => {
                     const dStr = new Date(tx.timestamp).toLocaleDateString('zh-HK', { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
                     if (dStr !== currentDate) {
                         if (currentGroup) result.push(currentGroup);
@@ -193,8 +219,9 @@
                 });
                 if (currentGroup) result.push(currentGroup);
                 return result;
-            }, [transactionsWithBalance]);
+            }, [transactions]);
 
+            // 購物車邏輯
             const handleItemQuantityChange = (item, delta) => {
                 setCart(prev => {
                     const existing = prev.find(i => i.id === item.id);
@@ -212,19 +239,17 @@
             const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
             const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-            // 全新資料庫路徑的批次寫入
+            // 批次結帳
             const handleCheckout = async () => {
-                if (!db || !user || cart.length === 0) return;
+                if (!db || (!user && !isMockAdmin) || cart.length === 0) return;
                 const batchTime = Date.now(); 
                 const currentCart = [...cart]; 
                 
-                setCart([]); 
-                setIsCartModalOpen(false); 
-                setActiveTab('overview');
+                setCart([]); setIsCartModalOpen(false); setActiveTab('overview');
 
                 try {
                     const batch = db.batch();
-                    const txRef = db.collection('transactions');
+                    const txRef = getDbRef().collection('transactions');
                     for (const item of currentCart) {
                         for (let i = 0; i < item.quantity; i++) {
                             const docRef = txRef.doc();
@@ -239,77 +264,64 @@
             };
 
             const handleAddIncome = async (amount, itemName) => {
-                if (!db || !user || amount <= 0) return;
-                await db.collection('transactions').add({
+                if (!db || (!user && !isMockAdmin) || amount <= 0) return;
+                await getDbRef().collection('transactions').add({
                     type: 'income', amount, category: 'allowance', itemName: itemName || '撥款入帳', emoji: '💰',
-                    timestamp: Date.now(), createdBy: user.email || 'Anonymous'
+                    timestamp: Date.now(), createdBy: (user && user.email) ? user.email : 'Anonymous'
                 });
                 setIsMomAdding(false);
             };
 
             const handleDeleteTransaction = async (id) => {
                 if (!isAdmin) return;
-                await db.collection('transactions').doc(id).delete();
+                await getDbRef().collection('transactions').doc(id).delete();
             };
 
             const saveSettings = async (updates) => {
-                if (db) {
-                    await db.collection('settings').doc('config').set(updates, { merge: true }).catch(e => console.error(e));
-                }
+                if (db) await getDbRef().collection('settings').doc('config').set(updates, { merge: true });
             };
 
             // ==========================================
-            // 視圖：狀態處理
+            // UI 渲染
             // ==========================================
             if (isInitializing) {
-                return <div className="flex h-screen items-center justify-center bg-background"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
-            }
-
-            if (errorMsg) {
                 return (
-                    <div className="flex h-[100dvh] items-center justify-center p-6 bg-background">
-                        <div className="w-full max-w-lg bg-red-50 border-2 border-red-200 rounded-3xl p-8 text-center shadow-lg">
-                            <i className="fas fa-shield-alt text-4xl text-red-400 mb-4"></i>
-                            <h2 className="text-xl font-bold text-red-700 mb-3">錯誤</h2>
-                            <p className="text-sm text-red-600 font-medium leading-relaxed">{errorMsg}</p>
-                        </div>
+                    <div className="flex h-screen items-center justify-center bg-background flex-col gap-4">
+                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 );
             }
 
             const filteredMenu = activeCategoryFilter === 'all' ? menuItems : menuItems.filter(i => i.category === activeCategoryFilter);
 
-            // ==========================================
-            // 視圖：頂級主系統
-            // ==========================================
             return (
-                <div className="flex flex-col h-[100dvh] text-sm relative">
+                <div className="flex flex-col h-[100dvh] text-sm relative selection:bg-gray-200">
                     
-                    {/* 頂部導航列 */}
-                    <header className="h-[72px] bg-surface/80 backdrop-blur-lg border-b border-bordercolor px-4 md:px-6 flex justify-between items-center shrink-0 z-20 sticky top-0">
-                        <div className="flex items-center gap-8">
+                    {/* 頂部導航列 (極簡 Apple 風格) */}
+                    <header className="h-[64px] bg-white/80 backdrop-blur-xl border-b border-bordercolor px-5 flex justify-between items-center z-20 sticky top-0">
+                        <div className="flex items-center gap-6">
                             <div className="flex items-center gap-3">
                                 {user && user.photoURL ? (
-                                    <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-lg shadow-md object-cover" />
+                                    <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full border border-gray-100 object-cover" />
                                 ) : (
-                                    <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center text-xs font-bold shadow-md">
+                                    <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center text-xs font-bold">
                                         {isAdmin ? 'A' : 'V'}
                                     </div>
                                 )}
                                 <div className="hidden sm:block">
-                                    <span className="font-bold text-base tracking-tight text-primary block leading-tight">{isAdmin ? '管理工作台' : '公開視角'}</span>
+                                    <span className="font-bold text-base tracking-tight text-primary block leading-tight">{isAdmin ? 'Workspace' : 'Journey'}</span>
                                     <span className="text-[10px] text-secondary font-medium tracking-wide flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-soft"></span> 雲端同步中
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Cloud Synced
                                     </span>
                                 </div>
                             </div>
                             
-                            <nav className="hidden md:flex items-center gap-6">
+                            <nav className="hidden md:flex items-center gap-2">
                                 {isAdmin ? (
                                     <>
-                                        <TopNavLink label="綜合概覽" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                                        <TopNavLink label="POS 點餐" active={activeTab === 'pos'} onClick={() => setActiveTab('pos')} />
-                                        <TopNavLink label="消費旅程" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} />
+                                        <TopNavLink label="儀表板" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                                        <TopNavLink label="收銀台" active={activeTab === 'pos'} onClick={() => setActiveTab('pos')} />
+                                        <TopNavLink label="交易紀錄" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
                                         <TopNavLink label="系統設定" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                                     </>
                                 ) : (
@@ -318,23 +330,19 @@
                             </nav>
                         </div>
 
-                        <div className="flex items-center gap-3 md:gap-4">
+                        <div className="flex items-center gap-3">
                             {!isAdmin && (
-                                <button onClick={() => setIsMomAdding(true)} className="flex items-center gap-2 bg-primary text-white px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-medium hover:bg-black transition-all shadow-premium hover:shadow-premium-hover active:scale-95">
-                                    <i className="fas fa-plus"></i> <span className="hidden md:inline">撥款入帳</span>
+                                <button onClick={() => setIsMomAdding(true)} className="hidden md:flex items-center gap-2 bg-primary text-white px-5 py-2 rounded-full text-xs font-bold hover:bg-gray-800 transition-colors">
+                                    <i className="fas fa-plus"></i> 撥款入帳
                                 </button>
                             )}
                             
                             {isAdmin ? (
-                                <button onClick={() => firebase.auth().signOut()} className="w-10 h-10 flex items-center justify-center rounded-full text-secondary hover:bg-gray-100 transition-all" title="登出">
-                                    <i className="fas fa-sign-out-alt"></i>
+                                <button onClick={() => { firebase.auth().signOut(); window.location.reload(); }} className="text-secondary hover:text-primary transition-colors text-sm font-medium px-2" title="登出">
+                                    登出
                                 </button>
                             ) : (
-                                <button onClick={async () => {
-                                    const provider = new firebase.auth.GoogleAuthProvider();
-                                    try { await firebase.auth().signInWithPopup(provider); } 
-                                    catch (err) { alert("登入失敗，請確認 Firebase 已開啟 Google 登入。"); }
-                                }} className="flex items-center gap-2 bg-surface border border-bordercolor text-primary px-3 md:px-4 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-bold hover:bg-gray-50 transition-all shadow-sm active:scale-95">
+                                <button onClick={handleAdminLogin} className="flex items-center gap-2 bg-white border border-bordercolor text-primary px-4 py-2 rounded-full text-xs font-bold hover:bg-gray-50 transition-colors shadow-sm">
                                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-4 h-4" alt="G" />
                                     <span className="hidden md:inline">管理員登入</span>
                                 </button>
@@ -342,22 +350,20 @@
                         </div>
                     </header>
 
-                    {/* 主內容區 */}
                     <main className="flex-1 relative w-full mx-auto overflow-hidden flex flex-col">
                         
                         {/* 👑 Overview */}
                         {activeTab === 'overview' && isAdmin && (
-                            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8">
-                                <div className="max-w-5xl mx-auto w-full pb-24 md:pb-8 animate-enter pt-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                                        <div className="md:col-span-2 bg-primary rounded-3xl p-8 md:p-10 flex flex-col justify-between shadow-premium hover:shadow-premium-hover transition-shadow relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-8">
+                                <div className="max-w-5xl mx-auto w-full pb-24 md:pb-8 smooth-enter pt-6">
+                                    <h1 className="text-2xl font-bold tracking-tight mb-6">Dashboard</h1>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                        <div className="md:col-span-2 bg-primary rounded-3xl p-8 md:p-10 flex flex-col justify-between shadow-apple relative overflow-hidden">
                                             <div className="relative z-10 flex justify-between items-start">
                                                 <div>
-                                                    <div className="text-xs font-medium text-gray-400 mb-2 tracking-wider flex items-center gap-2">可用餘額 <span className="bg-white/10 text-white/80 px-2 py-0.5 rounded text-[10px]">HKD</span></div>
+                                                    <div className="text-xs font-medium text-gray-400 mb-2 tracking-wider flex items-center gap-2">可用餘額</div>
                                                     <div className="text-6xl md:text-7xl font-bold tracking-tighter text-white">${totalBalance.toFixed(1)}</div>
                                                 </div>
-                                                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white/50 border border-white/10 group-hover:bg-white/20 transition-colors"><i className="fas fa-wallet"></i></div>
                                             </div>
                                             <div className="flex gap-12 mt-16 relative z-10 border-t border-white/10 pt-6">
                                                 <div><div className="text-[10px] text-gray-400 mb-1 tracking-wider font-bold">總支出</div><div className="text-xl font-semibold text-white">${totalExpense.toFixed(1)}</div></div>
@@ -365,33 +371,26 @@
                                             </div>
                                         </div>
 
-                                        <div className="bg-surface/80 backdrop-blur-sm rounded-3xl border border-bordercolor p-8 flex flex-col justify-center items-center shadow-premium hover:shadow-premium-hover transition-shadow">
-                                            <div className="relative w-36 h-36 rounded-full mb-6 ring-4 ring-gray-50/50" style={{ background: totalExpense === 0 ? '#f4f4f5' : `conic-gradient(${generateConicGradient(expenseData, totalExpense, categories)})` }}>
-                                                <div className="absolute inset-0 m-5 bg-surface rounded-full flex items-center justify-center shadow-input border border-gray-100"><i className="fas fa-chart-pie text-gray-300 text-xl"></i></div>
+                                        <div className="bg-white rounded-3xl border border-bordercolor p-8 flex flex-col justify-center items-center shadow-apple">
+                                            <div className="relative w-36 h-36 rounded-full mb-6" style={{ background: totalExpense === 0 ? '#F5F5F5' : `conic-gradient(${generateConicGradient(expenseData, totalExpense, categories)})` }}>
+                                                <div className="absolute inset-0 m-6 bg-white rounded-full flex items-center justify-center shadow-sm">
+                                                    <i className="fas fa-chart-pie text-gray-300 text-lg"></i>
+                                                </div>
                                             </div>
-                                            <div className="text-center w-full">
-                                                <div className="font-bold text-primary text-base">消費分佈</div>
-                                                {categories.length === 0 && <div className="text-[10px] text-secondary mt-2">請前往設定建立分類以啟用圖表</div>}
-                                            </div>
+                                            <div className="font-bold text-primary text-base">消費分佈</div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-surface/80 backdrop-blur-sm rounded-3xl border border-bordercolor overflow-hidden shadow-premium">
-                                        <div className="px-8 py-6 border-b border-bordercolor flex justify-between items-center bg-white">
-                                            <div className="flex items-center gap-3">
-                                                <h2 className="font-bold text-primary text-base">近期紀錄</h2>
-                                                <span className="bg-gray-100 text-secondary text-[10px] px-2 py-0.5 rounded-md font-bold">{transactions.length}</span>
-                                            </div>
+                                    <div className="bg-white rounded-3xl border border-bordercolor overflow-hidden shadow-apple">
+                                        <div className="px-8 py-6 border-b border-bordercolor flex justify-between items-center bg-gray-50/50">
+                                            <div className="font-bold text-primary text-base">近期紀錄</div>
+                                            <button onClick={() => setActiveTab('history')} className="text-xs font-bold text-secondary hover:text-primary transition-colors">View all</button>
                                         </div>
                                         {transactions.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center py-16 px-4">
-                                                <div className="w-16 h-16 bg-gray-50 border border-bordercolor rounded-2xl flex items-center justify-center text-gray-300 mb-4 shadow-sm"><i className="fas fa-inbox text-2xl"></i></div>
-                                                <div className="text-sm font-bold text-primary">暫無交易紀錄</div>
-                                                <div className="text-xs text-secondary mt-1">請前往 POS 點餐新增。</div>
-                                            </div>
+                                            <div className="py-16 text-center text-secondary text-sm">暫無紀錄</div>
                                         ) : (
-                                            <div className="divide-y divide-gray-100/80">
-                                                {transactions.slice(0, 5).map(tx => <HistoryRow key={tx.id} tx={tx} onDelete={() => handleDeleteTransaction(tx.id)} />)}
+                                            <div className="divide-y divide-gray-100">
+                                                {transactions.slice(0, 5).map(tx => <HistoryRow key={tx.id} tx={tx} onDelete={() => handleDeleteTransaction(tx.id)} isAdmin={isAdmin} />)}
                                             </div>
                                         )}
                                     </div>
@@ -401,38 +400,34 @@
 
                         {/* 👑 POS */}
                         {activeTab === 'pos' && isAdmin && (
-                            <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden px-4 md:px-6 gap-6 max-w-[1400px] mx-auto w-full animate-enter pb-4 md:pb-6 pt-4">
-                                <div className="w-full md:w-[65%] flex flex-col h-full bg-surface/80 backdrop-blur-sm rounded-3xl border border-bordercolor shadow-premium overflow-hidden">
-                                    <div className="px-6 py-4 border-b border-bordercolor flex gap-2 overflow-x-auto no-scrollbar shrink-0 bg-white">
-                                        <button onClick={() => setActiveCategoryFilter('all')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === 'all' ? 'bg-primary text-white border-primary shadow-md' : 'bg-surface text-secondary border-bordercolor hover:border-gray-300'}`}>全部</button>
+                            <div className="flex-1 flex flex-col md:flex-row h-full overflow-hidden px-5 md:px-8 gap-6 max-w-[1400px] mx-auto w-full smooth-enter pb-6 pt-6">
+                                <div className="w-full md:w-[65%] flex flex-col h-full bg-white rounded-3xl border border-bordercolor shadow-apple overflow-hidden">
+                                    <div className="px-6 py-4 border-b border-bordercolor flex gap-2 overflow-x-auto no-scrollbar shrink-0 bg-gray-50/50">
+                                        <button onClick={() => setActiveCategoryFilter('all')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === 'all' ? 'bg-primary text-white border-primary' : 'bg-white text-secondary border-gray-200 hover:border-gray-300'}`}>全部</button>
                                         {categories.map(cat => (
-                                            <button key={cat.id} onClick={() => setActiveCategoryFilter(cat.id)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === cat.id ? 'bg-primary text-white border-primary shadow-md' : 'bg-surface text-secondary border-bordercolor hover:border-gray-300'}`}>
+                                            <button key={cat.id} onClick={() => setActiveCategoryFilter(cat.id)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap border ${activeCategoryFilter === cat.id ? 'bg-primary text-white border-primary' : 'bg-white text-secondary border-gray-200 hover:border-gray-300'}`}>
                                                 {cat.emoji} {cat.name}
                                             </button>
                                         ))}
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-[120px] md:pb-6">
                                         {filteredMenu.length === 0 ? (
-                                            <div className="h-full flex flex-col items-center justify-center">
-                                                <div className="w-16 h-16 bg-gray-50 border border-bordercolor rounded-2xl flex items-center justify-center text-gray-300 mb-4 shadow-sm"><i className="fas fa-search text-xl"></i></div>
-                                                <div className="text-sm font-bold text-primary">找不到商品</div>
-                                                <div className="text-xs text-secondary mt-1">請於「系統設定」中新增。</div>
-                                            </div>
+                                            <div className="h-full flex flex-col items-center justify-center text-secondary text-sm">目前沒有商品，請前往設定新增。</div>
                                         ) : (
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                                                 {filteredMenu.map(item => {
                                                     const qty = cart.find(i => i.id === item.id)?.quantity || 0;
                                                     return (
-                                                        <div key={item.id} className={`p-4 rounded-2xl border transition-all flex flex-col h-full bg-surface ${qty > 0 ? 'border-primary ring-1 ring-primary shadow-premium hover:-translate-y-1' : 'border-bordercolor hover:border-gray-300 hover:shadow-premium hover:-translate-y-1'}`}>
+                                                        <div key={item.id} className={`p-5 rounded-2xl border transition-all flex flex-col h-full ${qty > 0 ? 'border-primary ring-1 ring-primary bg-gray-50/50' : 'border-bordercolor hover:border-gray-300 bg-white'}`}>
                                                             <div className="flex-1 flex flex-col items-center justify-center cursor-pointer mb-5" onClick={() => handleItemQuantityChange(item, 1)}>
                                                                 <div className="text-4xl mb-4 transform transition-transform hover:scale-110 active:scale-95">{item.emoji}</div>
                                                                 <div className="font-bold text-sm text-center text-primary line-clamp-1 w-full">{item.name}</div>
-                                                                <div className="text-xs font-semibold text-secondary mt-1.5 px-2 py-0.5 bg-gray-50 rounded-md border border-gray-100">${item.price}</div>
+                                                                <div className="text-xs font-bold text-secondary mt-1.5">${item.price}</div>
                                                             </div>
-                                                            <div className="w-full flex items-center justify-between bg-gray-50/80 rounded-xl p-1 shrink-0 border border-bordercolor">
+                                                            <div className="w-full flex items-center justify-between bg-gray-50 rounded-xl p-1 shrink-0 border border-bordercolor">
                                                                 <button onClick={() => handleItemQuantityChange(item, -1)} disabled={qty===0} className="w-9 h-9 rounded-lg flex justify-center items-center text-secondary disabled:opacity-30 active:scale-90 transition-all hover:bg-white hover:shadow-sm"><i className="fas fa-minus text-[10px]"></i></button>
                                                                 <span className="font-bold text-sm w-6 text-center text-primary">{qty}</span>
-                                                                <button onClick={() => handleItemQuantityChange(item, 1)} className="w-9 h-9 rounded-lg bg-white shadow-input flex justify-center items-center text-primary active:scale-90 transition-all border border-bordercolor hover:border-gray-300"><i className="fas fa-plus text-[10px]"></i></button>
+                                                                <button onClick={() => handleItemQuantityChange(item, 1)} className="w-9 h-9 rounded-lg bg-white shadow-sm flex justify-center items-center text-primary active:scale-90 transition-all border border-bordercolor hover:border-gray-300"><i className="fas fa-plus text-[10px]"></i></button>
                                                             </div>
                                                         </div>
                                                     );
@@ -441,17 +436,14 @@
                                         )}
                                     </div>
                                 </div>
-                                <div className="hidden md:flex w-[35%] bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl shadow-premium flex-col overflow-hidden">
-                                    <div className="p-6 border-b border-bordercolor flex justify-between items-center bg-white">
-                                        <div className="font-bold text-sm text-primary tracking-wide flex items-center gap-2"><i className="fas fa-receipt text-gray-300"></i> 結帳清單</div>
-                                        {cart.length > 0 && <button onClick={clearCart} className="text-[11px] font-bold text-secondary hover:text-red-500 transition-colors bg-gray-50 hover:bg-red-50 px-2.5 py-1 rounded-md border border-bordercolor hover:border-red-100">清空</button>}
+                                <div className="hidden md:flex w-[35%] bg-white border border-bordercolor rounded-3xl shadow-apple flex-col overflow-hidden">
+                                    <div className="p-6 border-b border-bordercolor flex justify-between items-center bg-gray-50/50">
+                                        <div className="font-bold text-sm text-primary tracking-wide">結帳清單</div>
+                                        {cart.length > 0 && <button onClick={clearCart} className="text-xs font-bold text-secondary hover:text-primary transition-colors">清空</button>}
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                                         {cart.length === 0 ? (
-                                            <div className="h-full flex flex-col items-center justify-center text-secondary opacity-60">
-                                                <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-full flex items-center justify-center mb-3"><i className="fas fa-shopping-basket text-lg"></i></div>
-                                                <div className="text-xs font-bold tracking-wider">未選擇商品</div>
-                                            </div>
+                                            <div className="h-full flex flex-col items-center justify-center text-secondary text-sm">未選擇商品</div>
                                         ) : (
                                             <div className="space-y-4">
                                                 {cart.map(item => (
@@ -460,26 +452,19 @@
                                                             <div className="font-bold text-primary text-sm line-clamp-1">{item.name}</div>
                                                             <div className="text-[11px] text-secondary mt-0.5 font-medium">{item.quantity} x ${item.price}</div>
                                                         </div>
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100">
-                                                                <button onClick={() => handleItemQuantityChange(item, -1)} className="w-7 h-7 rounded flex justify-center items-center text-secondary hover:bg-gray-200"><i className="fas fa-minus text-[10px]"></i></button>
-                                                                <span className="font-bold text-xs w-6 text-center">{item.quantity}</span>
-                                                                <button onClick={() => handleItemQuantityChange(item, 1)} className="w-7 h-7 rounded bg-white shadow-input flex justify-center items-center text-primary border border-gray-200"><i className="fas fa-plus text-[10px]"></i></button>
-                                                            </div>
-                                                            <div className="font-bold text-primary w-12 text-right">${(item.quantity * item.price).toFixed(1)}</div>
-                                                        </div>
+                                                        <div className="font-bold text-primary w-12 text-right">${(item.quantity * item.price).toFixed(1)}</div>
                                                     </div>
                                                 ))}
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-6 bg-white border-t border-bordercolor">
+                                    <div className="p-6 bg-gray-50/50 border-t border-bordercolor">
                                         <div className="flex justify-between items-center mb-6">
                                             <span className="text-sm font-bold text-secondary tracking-wider">總金額</span>
                                             <span className="text-3xl font-black text-primary tracking-tighter">${cartTotal.toFixed(1)}</span>
                                         </div>
-                                        <button onClick={handleCheckout} disabled={cart.length === 0} className="w-full py-4 rounded-xl bg-primary text-white font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-black active:scale-[0.98] transition-all shadow-premium flex justify-center items-center gap-2 hover:shadow-premium-hover">
-                                            確認結帳 <i className="fas fa-arrow-right text-[10px]"></i>
+                                        <button onClick={handleCheckout} disabled={cart.length === 0} className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-sm disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-800 active:scale-[0.98] transition-all">
+                                            確認結帳
                                         </button>
                                     </div>
                                 </div>
@@ -488,26 +473,19 @@
 
                         {/* 👑 Settings */}
                         {activeTab === 'settings' && isAdmin && (
-                            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8">
-                                <div className="max-w-4xl mx-auto pb-24 pt-6 space-y-8 animate-enter">
-                                    <h1 className="text-2xl font-bold tracking-tight mb-2">系統設定</h1>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-8">
+                                <div className="max-w-4xl mx-auto pb-24 pt-6 space-y-6 smooth-enter">
+                                    <h1 className="text-2xl font-bold tracking-tight mb-4">系統設定</h1>
                                     
-                                    <div className="bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl p-6 md:p-8 shadow-premium">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-primary border border-gray-200"><i className="fas fa-bolt text-xs"></i></div>
-                                            <div>
-                                                <h3 className="font-bold text-primary text-sm tracking-wide">預設入帳金額</h3>
-                                                <p className="text-[11px] text-secondary font-medium">媽媽介面的快捷撥款按鈕</p>
-                                            </div>
-                                        </div>
+                                    <div className="bg-white border border-bordercolor rounded-3xl p-6 md:p-8 shadow-apple">
+                                        <h3 className="font-bold text-primary text-sm tracking-wide mb-6">快速入帳金額</h3>
                                         <div className="flex flex-wrap gap-2 mb-6">
                                             {quickAllowances.map((val, idx) => (
-                                                <div key={idx} className="flex items-center bg-surface border border-bordercolor rounded-lg px-3 py-1.5 shadow-sm group">
-                                                    <span className="text-sm font-bold text-primary mr-2">${val}</span>
-                                                    <button onClick={() => saveSettings({ quickAllowances: quickAllowances.filter((_, i) => i !== idx) })} className="w-5 h-5 rounded flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors"><i className="fas fa-times text-[10px]"></i></button>
+                                                <div key={idx} className="flex items-center bg-gray-50 border border-bordercolor rounded-xl px-3 py-2">
+                                                    <span className="text-sm font-bold text-primary mr-3">${val}</span>
+                                                    <button onClick={() => saveSettings({ quickAllowances: quickAllowances.filter((_, i) => i !== idx) })} className="text-gray-400 hover:text-red-500"><i className="fas fa-times text-xs"></i></button>
                                                 </div>
                                             ))}
-                                            {quickAllowances.length === 0 && <span className="text-sm text-secondary">無預設金額</span>}
                                         </div>
                                         <form onSubmit={(e) => {
                                             e.preventDefault(); 
@@ -515,115 +493,100 @@
                                             if(!isNaN(val) && !quickAllowances.includes(val)) saveSettings({ quickAllowances: [...quickAllowances, val].sort((a,b)=>a-b) });
                                             e.target.reset();
                                         }} className="flex max-w-xs gap-2">
-                                            <input type="number" name="amount" required placeholder="輸入金額後按 Enter..." className="input-premium py-2 text-sm" />
-                                            <button type="submit" className="bg-primary text-white px-4 rounded-xl font-bold text-xs hover:bg-black transition-colors shadow-sm whitespace-nowrap">新增</button>
+                                            <input type="number" name="amount" required placeholder="輸入金額..." className="input-box" />
+                                            <button type="submit" className="bg-primary text-white px-5 rounded-xl font-bold text-sm hover:bg-gray-800 transition-colors">新增</button>
                                         </form>
                                     </div>
 
-                                    <div className="bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl p-6 md:p-8 shadow-premium">
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-primary border border-gray-200"><i className="fas fa-tags text-xs"></i></div>
-                                            <div>
-                                                <h3 className="font-bold text-primary text-sm tracking-wide">分類管理</h3>
-                                                <p className="text-[11px] text-secondary font-medium">自訂 POS 點餐分類</p>
-                                            </div>
-                                        </div>
+                                    <div className="bg-white border border-bordercolor rounded-3xl p-6 md:p-8 shadow-apple">
+                                        <h3 className="font-bold text-primary text-sm tracking-wide mb-6">分類管理</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                                             {categories.map(cat => (
-                                                <div key={cat.id} className="flex justify-between items-center p-3 border border-bordercolor rounded-xl bg-white shadow-sm group">
-                                                    <div className="flex items-center gap-2 text-sm font-bold"><span className="text-lg bg-gray-50 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-100">{cat.emoji}</span> {cat.name}</div>
-                                                    <button onClick={() => saveSettings({ categories: categories.filter(c => c.id !== cat.id) })} className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-500 transition-colors"><i className="fas fa-times text-[10px]"></i></button>
+                                                <div key={cat.id} className="flex justify-between items-center p-3 border border-bordercolor rounded-xl bg-gray-50 group">
+                                                    <div className="flex items-center gap-2 text-sm font-bold"><span className="text-base">{cat.emoji}</span> {cat.name}</div>
+                                                    <button onClick={() => saveSettings({ categories: categories.filter(c => c.id !== cat.id) })} className="text-gray-400 hover:text-red-500"><i className="fas fa-times text-xs"></i></button>
                                                 </div>
                                             ))}
-                                            {categories.length === 0 && <span className="text-sm text-secondary px-2">目前沒有任何分類。</span>}
                                         </div>
                                         <form onSubmit={(e) => {
                                             e.preventDefault(); const fd = new FormData(e.target);
                                             const newCat = { id: `c_${Date.now()}`, name: fd.get('name'), emoji: fd.get('emoji')||'📌' };
                                             saveSettings({ categories: [...categories, newCat] }); e.target.reset();
                                         }} className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-bordercolor">
-                                            <input type="text" name="name" required placeholder="分類名稱" className="input-premium flex-1" />
-                                            <input type="text" name="emoji" maxLength="2" required placeholder="Emoji" className="input-premium w-full sm:w-24 text-center" />
-                                            <button type="submit" className="bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-colors shadow-sm whitespace-nowrap">新增分類</button>
+                                            <input type="text" name="name" required placeholder="分類名稱" className="input-box flex-1" />
+                                            <input type="text" name="emoji" maxLength="2" required placeholder="Emoji" className="input-box w-full sm:w-24 text-center" />
+                                            <button type="submit" className="bg-primary text-white px-6 py-3 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors whitespace-nowrap">新增分類</button>
                                         </form>
                                     </div>
 
-                                    <div className="bg-surface/80 backdrop-blur-sm border border-bordercolor rounded-3xl p-6 md:p-8 shadow-premium">
+                                    <div className="bg-white border border-bordercolor rounded-3xl p-6 md:p-8 shadow-apple">
                                         <div className="flex justify-between items-center mb-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-primary border border-gray-200"><i className="fas fa-box text-xs"></i></div>
-                                                <div>
-                                                    <h3 className="font-bold text-primary text-sm tracking-wide">菜單管理</h3>
-                                                    <p className="text-[11px] text-secondary font-medium">管理 POS 商品菜單</p>
-                                                </div>
-                                            </div>
-                                            <span className="bg-gray-100 border border-gray-200 text-primary px-2.5 py-1 rounded-md text-[10px] font-bold">{menuItems.length} 項商品</span>
+                                            <h3 className="font-bold text-primary text-sm tracking-wide">商品管理</h3>
+                                            <span className="bg-gray-100 border border-bordercolor text-primary px-3 py-1 rounded-lg text-xs font-bold">{menuItems.length} 項</span>
                                         </div>
-                                        <div className="space-y-3 mb-8 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                        <div className="space-y-3 mb-8 max-h-[400px] overflow-y-auto custom-scrollbar">
                                             {menuItems.map(item => (
-                                                <div key={item.id} className="flex justify-between items-center p-4 border border-bordercolor rounded-2xl bg-white hover:border-gray-300 transition-colors shadow-sm group">
+                                                <div key={item.id} className="flex justify-between items-center p-4 border border-bordercolor rounded-2xl bg-gray-50">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="text-2xl w-12 h-12 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center">{item.emoji}</div>
-                                                        <div><div className="text-sm font-bold text-primary">{item.name}</div><div className="text-[11px] text-secondary font-medium mt-0.5">${item.price} • {categories.find(c=>c.id===item.category)?.name||'未分類'}</div></div>
+                                                        <div className="text-2xl">{item.emoji}</div>
+                                                        <div><div className="text-sm font-bold text-primary">{item.name}</div><div className="text-xs text-secondary font-medium mt-0.5">${item.price} • {categories.find(c=>c.id===item.category)?.name||'未分類'}</div></div>
                                                     </div>
-                                                    <button onClick={() => saveSettings({ items: menuItems.filter(i => i.id !== item.id) })} className="w-8 h-8 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors"><i className="fas fa-trash-alt text-xs"></i></button>
+                                                    <button onClick={() => saveSettings({ items: menuItems.filter(i => i.id !== item.id) })} className="w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center"><i className="fas fa-trash-alt text-xs"></i></button>
                                                 </div>
                                             ))}
-                                            {menuItems.length === 0 && <div className="text-center text-secondary text-sm py-10 bg-gray-50 rounded-2xl border border-gray-100">菜單是空的，請由下方新增。</div>}
                                         </div>
                                         <form onSubmit={(e) => { 
                                             e.preventDefault(); const fd = new FormData(e.target); 
                                             handleSaveMenuItem({ name: fd.get('name'), price: parseFloat(fd.get('price')), emoji: fd.get('emoji')||'📦', category: fd.get('category') }); e.target.reset(); 
                                         }} className="border-t border-bordercolor pt-8">
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                                                <div><label className="block text-[10px] font-bold text-secondary mb-1.5 tracking-wider">商品名稱</label><input type="text" name="name" required placeholder="如：薯片" className="input-premium" /></div>
-                                                <div><label className="block text-[10px] font-bold text-secondary mb-1.5 tracking-wider">價格 ($)</label><input type="number" name="price" step="0.1" required placeholder="10.0" className="input-premium" /></div>
-                                                <div><label className="block text-[10px] font-bold text-secondary mb-1.5 tracking-wider">圖示</label><input type="text" name="emoji" maxLength="2" required placeholder="🍟" className="input-premium text-center" /></div>
+                                                <input type="text" name="name" required placeholder="商品名稱" className="input-box" />
+                                                <input type="number" name="price" step="0.1" required placeholder="價格 ($)" className="input-box" />
+                                                <input type="text" name="emoji" maxLength="2" required placeholder="圖示 Emoji" className="input-box text-center" />
                                             </div>
                                             <div className="mb-8">
-                                                <label className="block text-[10px] font-bold text-secondary mb-2 tracking-wider">所屬分類</label>
+                                                <label className="block text-xs font-bold text-secondary mb-3">所屬分類</label>
                                                 <div className="flex flex-wrap gap-2">
                                                     {categories.map((cat, idx) => (
                                                         <label key={cat.id} className="cursor-pointer">
                                                             <input type="radio" name="category" value={cat.id} defaultChecked={idx===0} className="peer sr-only" />
-                                                            <div className="px-4 py-2 bg-surface border border-bordercolor rounded-xl text-sm font-bold text-secondary peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all shadow-sm hover:border-gray-300">
+                                                            <div className="px-5 py-2.5 bg-gray-50 border border-bordercolor rounded-xl text-sm font-bold text-secondary peer-checked:bg-primary peer-checked:text-white peer-checked:border-primary transition-all hover:border-gray-300">
                                                                 {cat.emoji} {cat.name}
                                                             </div>
                                                         </label>
                                                     ))}
-                                                    {categories.length === 0 && <span className="text-xs text-red-500 font-medium bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">請先在上方建立分類</span>}
+                                                    {categories.length === 0 && <span className="text-xs text-red-500 font-bold">請先建立分類</span>}
                                                 </div>
                                             </div>
-                                            <button type="submit" disabled={categories.length === 0} className="w-full bg-primary text-white py-3.5 rounded-xl font-bold shadow-premium hover:bg-black transition-colors hover:shadow-premium-hover hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">加入菜單</button>
+                                            <button type="submit" disabled={categories.length === 0} className="w-full bg-primary text-white py-4 rounded-2xl font-bold hover:bg-gray-800 transition-colors disabled:opacity-50">加入菜單</button>
                                         </form>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* 👩 Journey (所有人可見) */}
+                        {/* 🌟 Journey (首頁) */}
                         {activeTab === 'journey' && (
-                            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 md:px-8">
-                                <div className="max-w-2xl mx-auto pb-24 pt-6 animate-enter">
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-8">
+                                <div className="max-w-2xl mx-auto pb-24 pt-6 smooth-enter">
                                     <div className="flex justify-between items-end mb-10 border-b border-bordercolor pb-6">
                                         <div>
                                             <h1 className="text-3xl font-bold tracking-tight text-primary">消費旅程</h1>
-                                            <div className="mt-2 inline-flex items-center gap-2 bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
-                                                <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                            <div className="mt-3 inline-flex items-center gap-2 bg-white border border-bordercolor px-3 py-1.5 rounded-lg shadow-sm">
                                                 <span className="text-xs text-secondary font-medium">當前結餘</span>
                                                 <span className="font-bold text-primary text-sm">${totalBalance.toFixed(1)}</span>
                                             </div>
                                         </div>
                                         {!isAdmin && (
-                                            <button onClick={() => setIsMomAdding(true)} className="md:hidden bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center shadow-premium hover:shadow-premium-hover active:scale-95 transition-all">
+                                            <button onClick={() => setIsMomAdding(true)} className="md:hidden bg-primary text-white w-12 h-12 rounded-full flex items-center justify-center shadow-apple active:scale-95 transition-transform">
                                                 <i className="fas fa-plus"></i>
                                             </button>
                                         )}
                                     </div>
 
-                                    <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:ml-6 before:w-0.5 before:bg-bordercolor before:z-0">
+                                    <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 md:before:ml-6 before:-translate-x-px before:w-0.5 before:bg-bordercolor">
                                         {groupedTransactions.length === 0 ? (
-                                            <div className="text-center py-20 text-secondary text-sm font-medium relative z-10 bg-background">旅程尚未開始，系統目前沒有任何紀錄。</div>
+                                            <div className="text-center py-20 text-secondary text-sm font-medium relative z-10 bg-background">目前冇任何紀錄。</div>
                                         ) : (
                                             groupedTransactions.map((group, index) => <GroupedTimelineDay key={index} group={group} isAdmin={isAdmin} onDelete={handleDeleteTransaction} />)
                                         )}
@@ -631,16 +594,30 @@
                                 </div>
                             </div>
                         )}
+
+                        {/* 👑 History */}
+                        {activeTab === 'history' && isAdmin && (
+                            <div className="flex-1 overflow-y-auto custom-scrollbar px-5 md:px-8">
+                                <div className="max-w-4xl mx-auto pb-24 pt-6 smooth-enter">
+                                    <h1 className="text-2xl font-bold tracking-tight mb-6">交易紀錄</h1>
+                                    <div className="bg-white rounded-3xl border border-bordercolor overflow-hidden shadow-apple">
+                                        <div className="divide-y divide-gray-100">
+                                            {transactions.length === 0 ? (
+                                                <div className="py-20 text-center text-secondary text-sm">暫無紀錄</div>
+                                            ) : transactions.map(tx => <HistoryRow key={tx.id} tx={tx} onDelete={() => handleDeleteTransaction(tx.id)} isAdmin={isAdmin} />)}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </main>
 
-                    {/* ==========================================
-                        📱 手機專屬控制區
-                        ========================================== */}
+                    {/* 行動版選單 */}
                     {activeTab === 'pos' && isAdmin && cart.length > 0 && (
                         <div className="md:hidden absolute bottom-[84px] left-4 right-4 z-30 animate-slide-up">
-                            <button onClick={() => setIsCartModalOpen(true)} className="w-full bg-primary text-white rounded-2xl p-4 flex justify-between items-center shadow-premium-hover active:scale-95 transition-transform border border-gray-800">
+                            <button onClick={() => setIsCartModalOpen(true)} className="w-full bg-primary text-white rounded-2xl p-4 flex justify-between items-center shadow-apple active:scale-95 transition-transform">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-white/10 border border-white/20 rounded-full flex items-center justify-center font-bold text-xs">{cartItemCount}</div>
+                                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center font-bold text-xs">{cartItemCount}</div>
                                     <span className="font-bold text-sm tracking-wide">結帳清單</span>
                                 </div>
                                 <div className="text-lg font-black">${cartTotal.toFixed(1)}</div>
@@ -649,29 +626,27 @@
                     )}
 
                     {isAdmin && (
-                        <nav className="md:hidden h-[68px] bg-surface/90 backdrop-blur-lg border-t border-bordercolor flex justify-around pb-safe z-20 shrink-0">
-                            <MobileNavButton icon="fa-border-all" label="概覽" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                        <nav className="md:hidden h-[68px] bg-white/90 backdrop-blur-lg border-t border-bordercolor flex justify-around pb-safe z-20 shrink-0">
+                            <MobileNavButton icon="fa-chart-pie" label="概覽" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                             <MobileNavButton icon="fa-cash-register" label="POS" active={activeTab === 'pos'} onClick={() => setActiveTab('pos')} />
-                            <MobileNavButton icon="fa-map-signs" label="旅程" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} />
-                            <MobileNavButton icon="fa-sliders-h" label="設定" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                            <MobileNavButton icon="fa-route" label="旅程" active={activeTab === 'journey'} onClick={() => setActiveTab('journey')} />
+                            <MobileNavButton icon="fa-cog" label="設定" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                         </nav>
                     )}
 
-                    {/* ==========================================
-                        Modals
-                        ========================================== */}
+                    {/* Modals */}
                     {isCartModalOpen && isAdmin && (
                         <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
-                            <div className="absolute inset-0 bg-primary/40 backdrop-blur-sm animate-fade" onClick={() => setIsCartModalOpen(false)}></div>
-                            <div className="relative w-full bg-surface rounded-t-[32px] flex flex-col max-h-[85dvh] animate-drawer shadow-premium-hover">
-                                <div className="p-6 border-b border-bordercolor flex justify-between items-center shrink-0 bg-white rounded-t-[32px]">
-                                    <div className="font-bold tracking-wider text-sm text-primary flex items-center gap-2"><i className="fas fa-receipt text-gray-300"></i> 當前訂單</div>
+                            <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm animate-fade" onClick={() => setIsCartModalOpen(false)}></div>
+                            <div className="relative w-full bg-white rounded-t-[32px] flex flex-col max-h-[85dvh] animate-drawer shadow-apple">
+                                <div className="p-6 border-b border-bordercolor flex justify-between items-center shrink-0">
+                                    <div className="font-bold text-sm text-primary">當前訂單</div>
                                     <button onClick={() => setIsCartModalOpen(false)} className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-secondary"><i className="fas fa-times text-xs"></i></button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                                     <div className="space-y-4">
                                         {cart.map(item => (
-                                            <div key={item.cartId} className="flex flex-col gap-3 animate-fade bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+                                            <div key={item.cartId} className="flex flex-col gap-3 animate-fade bg-gray-50 border border-bordercolor p-4 rounded-2xl">
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex items-center gap-3">
                                                         <span className="text-xl">{item.emoji}</span>
@@ -679,12 +654,12 @@
                                                     </div>
                                                     <div className="font-black text-primary text-sm">${(item.quantity * item.price).toFixed(1)}</div>
                                                 </div>
-                                                <div className="flex items-center justify-between mt-2 pt-3 border-t border-gray-50">
+                                                <div className="flex items-center justify-between mt-1 pt-3 border-t border-gray-200">
                                                     <div className="text-[11px] text-secondary font-medium">${item.price} /件</div>
-                                                    <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-1 border border-bordercolor">
-                                                        <button onClick={() => handleItemQuantityChange(item, -1)} className="w-8 h-8 rounded-md flex justify-center items-center text-secondary bg-white shadow-input active:scale-95"><i className="fas fa-minus text-[10px]"></i></button>
+                                                    <div className="flex items-center gap-3 bg-white rounded-lg p-1 border border-bordercolor">
+                                                        <button onClick={() => handleItemQuantityChange(item, -1)} className="w-8 h-8 rounded-md flex justify-center items-center text-secondary active:scale-95"><i className="fas fa-minus text-[10px]"></i></button>
                                                         <span className="font-bold text-sm w-6 text-center text-primary">{item.quantity}</span>
-                                                        <button onClick={() => handleItemQuantityChange(item, 1)} className="w-8 h-8 rounded-md flex justify-center items-center text-primary bg-white shadow-input active:scale-95"><i className="fas fa-plus text-[10px]"></i></button>
+                                                        <button onClick={() => handleItemQuantityChange(item, 1)} className="w-8 h-8 rounded-md flex justify-center items-center text-primary active:scale-95"><i className="fas fa-plus text-[10px]"></i></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -696,8 +671,8 @@
                                         <span className="text-3xl font-black text-primary">${cartTotal.toFixed(1)}</span>
                                     </div>
                                 </div>
-                                <div className="p-6 pt-0 shrink-0 pb-safe bg-surface">
-                                    <button onClick={handleCheckout} className="w-full py-4 rounded-[16px] bg-primary text-white font-bold text-sm shadow-premium hover:shadow-premium-hover active:scale-95 transition-all">確認結帳</button>
+                                <div className="p-6 pt-0 shrink-0 pb-safe">
+                                    <button onClick={handleCheckout} className="w-full py-4 rounded-2xl bg-primary text-white font-bold text-sm shadow-apple active:scale-95 transition-transform">確認結帳</button>
                                 </div>
                             </div>
                         </div>
@@ -705,26 +680,25 @@
 
                     {isMomAdding && !isAdmin && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                            <div className="absolute inset-0 bg-primary/40 backdrop-blur-sm animate-fade" onClick={() => setIsMomAdding(false)}></div>
-                            <div className="relative w-full max-w-sm bg-surface rounded-[32px] shadow-premium-hover overflow-hidden animate-enter">
-                                <div className="p-6 border-b border-bordercolor flex justify-between items-center bg-white">
+                            <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm animate-fade" onClick={() => setIsMomAdding(false)}></div>
+                            <div className="relative w-full max-w-sm bg-white rounded-[32px] shadow-apple overflow-hidden animate-enter">
+                                <div className="p-6 border-b border-bordercolor flex justify-between items-center">
                                     <h2 className="text-sm font-bold text-primary tracking-wider">撥款入帳</h2>
                                     <button onClick={() => setIsMomAdding(false)} className="w-8 h-8 rounded-full bg-gray-100 text-secondary flex items-center justify-center hover:bg-gray-200 transition-colors"><i className="fas fa-times text-xs"></i></button>
                                 </div>
                                 <div className="p-6">
                                     {quickAllowances.length > 0 && (
                                         <div className="mb-6">
-                                            <div className="text-[10px] text-secondary font-bold mb-3 tracking-wider">快速選擇金額</div>
+                                            <div className="text-[10px] text-secondary font-bold mb-3 tracking-wider">快速選擇</div>
                                             <div className="grid grid-cols-3 gap-2">
                                                 {quickAllowances.map((val, idx) => (
-                                                    <button key={idx} onClick={() => document.getElementById('amountInput').value = val} type="button" className="py-2.5 bg-surface border border-bordercolor rounded-xl text-sm font-bold text-primary transition-all shadow-sm hover:border-primary">
+                                                    <button key={idx} onClick={() => document.getElementById('amountInput').value = val} type="button" className="py-2.5 bg-gray-50 border border-bordercolor rounded-xl text-sm font-bold text-primary transition-all active:scale-95 hover:border-gray-400">
                                                         ${val}
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
-
                                     <form onSubmit={(e) => {
                                         e.preventDefault(); const fd = new FormData(e.target);
                                         handleAddIncome(parseFloat(fd.get('amount')), fd.get('itemName'));
@@ -732,14 +706,14 @@
                                         <div className="space-y-4">
                                             <div>
                                                 <label className="block text-[10px] font-bold text-secondary mb-2 tracking-wider">入帳金額 ($)</label>
-                                                <input id="amountInput" type="number" name="amount" step="0.1" required className="input-premium text-xl font-bold py-3.5" placeholder="0.0" />
+                                                <input id="amountInput" type="number" name="amount" step="0.1" required className="input-box text-xl font-bold py-3.5" placeholder="0.0" />
                                             </div>
                                             <div>
                                                 <label className="block text-[10px] font-bold text-secondary mb-2 tracking-wider">備註 (選填)</label>
-                                                <input type="text" name="itemName" className="input-premium py-3" placeholder="如：獎勵金" />
+                                                <input type="text" name="itemName" className="input-box py-3" placeholder="如：獎勵金" />
                                             </div>
                                         </div>
-                                        <button type="submit" className="w-full mt-8 py-3.5 text-white bg-primary rounded-xl font-bold text-sm hover:bg-black active:scale-95 transition-all shadow-premium">確認撥款</button>
+                                        <button type="submit" className="w-full mt-8 py-4 text-white bg-primary rounded-2xl font-bold text-sm hover:bg-gray-800 active:scale-95 transition-all">確認撥款</button>
                                     </form>
                                 </div>
                             </div>
@@ -749,10 +723,9 @@
             );
         }
 
-        // --- 輔助組件 ---
         function TopNavLink({ label, active, onClick }) {
             return (
-                <button onClick={onClick} className={`text-sm font-bold transition-all relative px-1 py-2 ${active ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
+                <button onClick={onClick} className={`text-sm font-bold transition-all relative px-2 py-2 ${active ? 'text-primary' : 'text-secondary hover:text-primary'}`}>
                     {label}
                     {active && <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t-full"></div>}
                 </button>
@@ -763,26 +736,26 @@
             return (
                 <button onClick={onClick} className={`flex-1 flex flex-col items-center justify-center pt-2 pb-1 transition-colors ${active ? 'text-primary' : 'text-secondary'}`}>
                     <i className={`fas ${icon} text-lg mb-1`}></i>
-                    <span className={`text-[10px] ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
+                    <span className={`text-[10px] mt-1 ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
                 </button>
             );
         }
 
-        function HistoryRow({ tx, onDelete }) {
+        function HistoryRow({ tx, onDelete, isAdmin }) {
             const isIncome = tx.type === 'income';
             const d = new Date(tx.timestamp);
             return (
                 <div className="flex items-center justify-between p-5 hover:bg-gray-50/50 transition-colors group bg-white">
                     <div className="flex items-center gap-4">
-                        <div className="text-xl w-10 h-10 bg-surface border border-bordercolor rounded-xl flex items-center justify-center shadow-input">{tx.emoji}</div>
+                        <div className="text-xl w-12 h-12 bg-gray-50 border border-bordercolor rounded-2xl flex items-center justify-center">{tx.emoji}</div>
                         <div>
                             <div className="font-bold text-primary text-sm">{tx.itemName}</div>
-                            <div className="text-[11px] text-secondary mt-0.5 font-medium">{d.toLocaleDateString()} {d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                            <div className="text-[11px] text-secondary mt-1 font-medium">{d.toLocaleDateString()} {d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className={`font-bold text-sm ${isIncome ? 'text-green-600' : 'text-primary'}`}>{isIncome?'+':'-'}${tx.amount.toFixed(1)}</div>
-                        <button onClick={onDelete} className="w-8 h-8 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center"><i className="fas fa-trash-alt text-xs"></i></button>
+                        <div className={`font-bold text-base ${isIncome ? 'text-green-600' : 'text-primary'}`}>{isIncome?'+':'-'}${tx.amount.toFixed(1)}</div>
+                        {isAdmin && <button onClick={onDelete} className="w-8 h-8 rounded-xl text-gray-400 hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center"><i className="fas fa-trash-alt text-xs"></i></button>}
                     </div>
                 </div>
             );
@@ -791,22 +764,22 @@
         function GroupedTimelineDay({ group, isAdmin, onDelete }) {
             const dailyExpense = group.items.filter(i => i.type === 'expense').reduce((sum, i) => sum + parseFloat(i.amount), 0);
             return (
-                <div className="flex gap-4 md:gap-5 animate-enter relative z-10">
+                <div className="flex gap-4 md:gap-5 smooth-enter relative z-10">
                     <div className="flex flex-col items-center pt-1.5">
-                        <div className="w-2.5 h-2.5 rounded-full shadow-sm ring-4 ring-background bg-primary"></div>
+                        <div className="w-3 h-3 rounded-full shadow-sm ring-4 ring-background bg-primary"></div>
                     </div>
-                    <div className="flex-1 pb-6">
+                    <div className="flex-1 pb-8">
                         <div className="flex justify-between items-end mb-3 px-1">
-                            <div className="text-[11px] text-secondary font-bold tracking-wider">{group.date}</div>
+                            <div className="text-xs text-primary font-bold tracking-wider">{group.date}</div>
                             <div className="text-[10px] text-secondary font-medium flex items-center gap-2">
                                 {dailyExpense > 0 && <span>是日消費: <span className="font-bold text-primary">${dailyExpense.toFixed(1)}</span></span>}
-                                <span className="bg-surface border border-bordercolor px-2 py-0.5 rounded-md text-primary font-bold shadow-sm">
+                                <span className="bg-gray-100 border border-bordercolor px-2 py-1 rounded-lg text-primary font-bold shadow-sm">
                                     結餘: ${(group.endOfDayBalance || 0).toFixed(1)}
                                 </span>
                             </div>
                         </div>
                         
-                        <div className="bg-surface border border-bordercolor rounded-2xl shadow-input hover:shadow-premium transition-shadow overflow-hidden">
+                        <div className="bg-white border border-bordercolor rounded-3xl shadow-apple overflow-hidden">
                             <div className="divide-y divide-gray-100">
                                 {group.items.map(tx => {
                                     const isIncome = tx.type === 'income';
@@ -814,11 +787,11 @@
                                         <div key={tx.id} className="p-4 md:p-5 flex justify-between items-center bg-white hover:bg-gray-50/50 transition-colors group/item">
                                             <div className="flex items-center gap-4">
                                                 <span className="text-xl w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center">{tx.emoji}</span>
-                                                <span className="font-semibold text-sm text-primary">{tx.itemName}</span>
+                                                <span className="font-bold text-sm text-primary">{tx.itemName}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <span className={`font-black text-lg ${isIncome ? 'text-green-600' : 'text-primary'}`}>{isIncome?'+':'-'}${tx.amount.toFixed(1)}</span>
-                                                {isAdmin && <button onClick={() => onDelete(tx.id)} className="w-6 h-6 rounded text-gray-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all flex items-center justify-center"><i className="fas fa-trash-alt text-[10px]"></i></button>}
+                                                {isAdmin && <button onClick={() => onDelete(tx.id)} className="w-8 h-8 rounded-xl text-gray-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all flex items-center justify-center"><i className="fas fa-trash-alt text-[10px]"></i></button>}
                                             </div>
                                         </div>
                                     );
@@ -839,7 +812,7 @@
                 const start = cumulativePercent;
                 const percent = (amount / total) * 100;
                 cumulativePercent += percent;
-                return `#09090b ${start}% ${cumulativePercent}%`;
+                return `#000000 ${start}% ${cumulativePercent}%`;
             }).filter(Boolean).join(', ');
         }
 
